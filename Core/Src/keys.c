@@ -28,7 +28,7 @@ void KEYS_Scan() {
         int time = HAL_GetTick();
         int dt = time - keys_update_time[i];
         keys_update_time[i] = time;
-        if (state == GPIO_PIN_SET) {
+        if (state == GPIO_PIN_RESET) {
             keys_pressed_time[i] += dt;
             if (keys_state[i] == KEYS_STATE_RELEASE && keys_pressed_time[i] > KEYS_DEBOUNCE_TIME) {
                 keys_state[i] = KEYS_STATE_PRESS;

@@ -1,18 +1,16 @@
 {
     "configurations": [
         {
-            "showDevDebugOutput": "parsed",
-            "cwd": "${workspaceRoot}",
-            "executable": "./build/h743framework.elf",
-            "name": "Debug STM32",
-            "request": "launch",
-            "type": "cortex-debug",
-            "servertype": "openocd",
-            "preLaunchTask": "Build STM",
-            "device": "stm32h743",
-            "configFiles": [
-                "openocd.cfg"
-            ]
+          "showDevDebugOutput": "parsed",
+          "cwd": "${workspaceRoot}",
+          "executable": "./build/h743framework.elf",
+          "name": "Debug STM32",
+          "request": "launch",
+          "type": "cortex-debug",
+          "servertype": "openocd",
+          "preLaunchTask": "Build STM",
+          "device": "stm32h743",
+          "configFiles": ["openocd.cfg"],
         },
         {
             "showDevDebugOutput": "parsed",

@@ -18,14 +18,18 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+
 #include "keys.h"
 #include "retarget.h"
+#include "ad7606.h"
+#include "dac8830.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,13 +95,19 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI1_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
+  MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   RetargetInit(&huart1);
   KEYS_Init();
   KEYS_SetHandler(APP_KeysHandler);
+  AD7606_Init();
+  DAC8830_Init();
+
+  printf("Hello World!\r\n");
+  DAC8830_SetVoltage(2, 0xAAAA);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -171,6 +181,7 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+int16_t adc_buffer[128];
 void APP_KeysHandler(uint8_t key, uint8_t state) {
   if (state == KEYS_STATE_PRESS) {
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
@@ -180,7 +191,25 @@ void APP_KeysHandler(uint8_t key, uint8_t state) {
   } else if (state == KEYS_STATE_LONG_PRESS) {
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
   }
+
+  if (key == 0 && state == KEYS_STATE_PRESS) {
+    uint16_t data[8] = {0};
+    AD7606_Sample(data);
+    printf("data=%d\r\n", (int)data[0]);
+  }
+
+  if (key == 1 && state == KEYS_STATE_PRESS) {
+    BOOL ok = AD7606_CollectSamples(128, 2000, adc_buffer);
+    if (!ok) {
+      printf("collect samples failed\r\n");
+    }
+    for (int i = 0; i < 128; i++) {
+      printf("%d,", adc_buffer[i]);
+    }
+    printf("\n");
+  }
 }
+
 /* USER CODE END 4 */
 
 /**

@@ -2,6 +2,7 @@
 // https://github.com/cnoviello/mastering-stm32/blob/master/nucleo-f030R8/system/src/retarget/retarget.c
 
 #include "retarget.h"
+
 #include <_ansi.h>
 #include <_syslist.h>
 #include <errno.h>
@@ -39,11 +40,20 @@ int _write(int fd, char *ptr, int len) {
     HAL_StatusTypeDef hstatus;
 
     if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
-        hstatus = HAL_UART_Transmit(gHuart, (uint8_t *)ptr, len, HAL_MAX_DELAY);
-        if (hstatus == HAL_OK)
+        if (gHuart == NULL) {
+            // Use ITM
+            for (int i = 0; i < len; i++) {
+                ITM_SendChar((*ptr++));
+            }
             return len;
-        else
-            return EIO;
+        } else {
+            hstatus =
+                HAL_UART_Transmit(gHuart, (uint8_t *)ptr, len, HAL_MAX_DELAY);
+            if (hstatus == HAL_OK)
+                return len;
+            else
+                return -1;
+        }
     }
     errno = EBADF;
     return -1;
@@ -69,11 +79,23 @@ int _read(int fd, char *ptr, int len) {
     HAL_StatusTypeDef hstatus;
 
     if (fd == STDIN_FILENO) {
-        hstatus = HAL_UART_Receive(gHuart, (uint8_t *)ptr, 1, HAL_MAX_DELAY);
-        if (hstatus == HAL_OK)
-            return 1;
-        else
-            return EIO;
+        if (gHuart == NULL) {
+            // // Use ITM
+            // while (!ITM_CheckChar()) {
+            //     // Wait for character
+            // }
+            // char c = ITM_ReceiveChar();
+            // *ptr++ = c;
+            // return 1;
+            return -1;
+        } else {
+            hstatus =
+                HAL_UART_Receive(gHuart, (uint8_t *)ptr, 1, HAL_MAX_DELAY);
+            if (hstatus == HAL_OK)
+                return 1;
+            else
+                return -1;
+        }
     }
     errno = EBADF;
     return -1;
@@ -89,4 +111,4 @@ int _fstat(int fd, struct stat *st) {
     return 0;
 }
 
-#endif  //#if !defined(OS_USE_SEMIHOSTING)
+#endif  // #if !defined(OS_USE_SEMIHOSTING)
