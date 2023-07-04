@@ -1,4 +1,0 @@
-{
-    "cortex-debug.armToolchainPath": "C:\\Program Files (x86)\\Arm GNU Toolchain arm-none-eabi\\12.2 mpacbti-rel1\\bin",
-    "cortex-debug.openocdPath": "C:\\SOFTWARE\\OPENOCD\\BIN\\OPENOCD.EXE"
-}
