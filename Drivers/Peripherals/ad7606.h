@@ -3,7 +3,20 @@
  */
 #pragma once
 
+#ifdef AD7606_ENABLE
+
 #include "main.h"
+
+/* ------------------------------- AD7606 Pins ------------------------------ */
+// AD_PAR_SET (May be tied to LOW)
+// AD_STBY (May be tied to HIGH)
+// AD_RANGE
+// AD_OS0 AD_OS1 AD_OS2
+// AD_CONVSTA AD_CONVSTB
+// AD_RD
+// AD_CS
+// AD_BUSY
+// AD_D0 - AD_D15 (Parallel interface)
 
 #define AD_RANGE_10V 1
 #define AD_RANGE_5V 0
@@ -40,3 +53,5 @@ void AD7606_Sample(uint16_t *output);
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output);
 
 void AD7606_TimerCallback(void);
+
+#endif

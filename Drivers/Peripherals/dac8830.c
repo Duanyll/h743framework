@@ -1,5 +1,7 @@
 #include "dac8830.h"
 
+#ifdef DAC8830_ENABLE
+
 #include <stdio.h>
 
 #include "tim.h"
@@ -84,3 +86,5 @@ void DAC8830_TimerCallback() {
         sine_wave_index = 0;
     }
 }
+
+#endif

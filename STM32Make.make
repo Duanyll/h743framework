@@ -36,9 +36,7 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/ad7606.c \
 Core/Src/cJSON.c \
-Core/Src/dac8830.c \
 Core/Src/gpio.c \
 Core/Src/keys.c \
 Core/Src/main.c \
@@ -48,6 +46,10 @@ Core/Src/stm32h7xx_it.c \
 Core/Src/system_stm32h7xx.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
+Drivers/Peripherals/ad7606.c \
+Drivers/Peripherals/ad9834.c \
+Drivers/Peripherals/adf4351.c \
+Drivers/Peripherals/dac8830.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
@@ -124,6 +126,10 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
+-DAD7606_ENABLE \
+-DAD7606_PARALLEL_INTERFACE \
+-DAD9959_ENABLE \
+-DDAC8830_ENABLE \
 -DSTM32H743xx \
 -DUSE_HAL_DRIVER
 
@@ -142,6 +148,7 @@ C_INCLUDES =  \
 -ICore/Inc \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
+-IDrivers/Peripherals \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy
 

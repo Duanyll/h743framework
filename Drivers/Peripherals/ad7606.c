@@ -1,3 +1,5 @@
+#ifdef AD7606_ENABLE
+
 #include "ad7606.h"
 
 #include <stdio.h>
@@ -28,8 +30,12 @@ void AD7606_Init(void) {
 }
 
 void AD7606_ApplyConfig(void) {
+#ifdef AD7606_PARALLEL_INTERFACE
     // Set parallel mode
     AD_WRITE(PAR_SET, LOW);
+#else
+    #error "Serial interface not implemented"
+#endif
 
     // Leave standby mode
     AD_WRITE(STBY, HIGH);
@@ -119,6 +125,7 @@ void AD7606_Sample(uint16_t *output) {
     while (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == HIGH)
         ;
     delay_ns(50);
+#ifdef AD7606_PARALLEL_INTERFACE
     for (int i = 0; i < 8; i++) {
         HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, LOW);
         delay_ns(50);
@@ -129,6 +136,9 @@ void AD7606_Sample(uint16_t *output) {
         HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, HIGH);
         delay_ns(50);
     }
+#else
+    #error "Serial interface not implemented"
+#endif
     ad7606_isSampling = FALSE;
     HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
 }
@@ -165,3 +175,5 @@ void AD7606_TimerCallback() {
     ad7606_output += popcount(ad7606_config.channels);
     ad7606_sampleCount--;
 }
+
+#endif

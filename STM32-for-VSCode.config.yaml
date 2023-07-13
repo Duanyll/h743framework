@@ -20,7 +20,11 @@ floatAbi: -mfloat-abi=hard
 ldscript: STM32H743VITx_FLASH.ld # linker script
 
 # Compiler definitions. The -D prefix for the compiler will be automatically added.
-cDefinitions: []
+cDefinitions: 
+  - AD7606_ENABLE
+  - AD7606_PARALLEL_INTERFACE
+  - DAC8830_ENABLE
+  - AD9959_ENABLE
 cxxDefinitions: []
 asDefinitions: []
 
@@ -76,6 +80,7 @@ includeDirectories:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - Drivers/Peripherals/**
 
 
 # Files that should be included in the compilation.
@@ -87,6 +92,7 @@ sourceFiles:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
+  - Drivers/Peripherals/**/*.c
 
 
 # When no makefile is present it will show a warning pop-up.
