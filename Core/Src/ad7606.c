@@ -73,6 +73,7 @@ int AD7606_SetConfig(AD7606_Config *config) {
     if (config->channels > 0xFF) {
         return -1;
     }
+    ad7606_config = *config;
     return 0;
 }
 
@@ -102,6 +103,7 @@ uint16_t AD7606_ConvertData(uint16_t data) {
 
 void AD7606_Sample(uint16_t *output) {
     ad7606_isSampling = TRUE;
+    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
     AD_WRITE(CONVSTA, LOW);
     delay_ns(50);
     AD_WRITE(CONVSTA, HIGH);
@@ -111,6 +113,7 @@ void AD7606_Sample(uint16_t *output) {
     delay_ns(100);
     if (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == LOW) {
         printf("Conversion not started\n");
+        HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
     }
     // Wait for BUSY to go low
     while (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == HIGH)
@@ -127,16 +130,17 @@ void AD7606_Sample(uint16_t *output) {
         delay_ns(50);
     }
     ad7606_isSampling = FALSE;
+    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
 }
 
-BOOL AD7606_CollectSamples(int count, int sampleRate, uint16_t *output) {
+BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output) {
     // Config tim2 to trigger at sampleRate
-    int period = HAL_RCC_GetPCLK1Freq() / (TIM2->PSC + 1) / sampleRate;
-    __HAL_TIM_SET_AUTORELOAD(&htim2, period - 1);
+    int period = HAL_RCC_GetPCLK1Freq() / (TIM2->PSC + 1) / sampleRate - 1;
+    __HAL_TIM_SET_AUTORELOAD(&htim2, period);
     __HAL_TIM_SET_COUNTER(&htim2, 0);
     printf("period: %d\n", period);
     ad7606_sampleCount = count;
-    ad7606_output = output;
+    ad7606_output = (uint16_t*)output;
     ad7606_badSampleFlag = FALSE;
     AD7606_Reset();
     HAL_TIM_Base_Start_IT(&htim2);
@@ -145,7 +149,7 @@ BOOL AD7606_CollectSamples(int count, int sampleRate, uint16_t *output) {
     HAL_TIM_Base_Stop_IT(&htim2);
     int sampleCount = count * popcount(ad7606_config.channels);
     for (int i = 0; i < sampleCount; i++) {
-        output[i] = AD7606_ConvertData(output[i]);
+        output[i] = (int16_t)AD7606_ConvertData(output[i]);
     }
     return !ad7606_badSampleFlag;
 }

@@ -56,6 +56,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+void APP_TestADC();
 void APP_KeysHandler(uint8_t key, uint8_t state);
 /* USER CODE END PFP */
 
@@ -104,10 +105,16 @@ int main(void)
   KEYS_Init();
   KEYS_SetHandler(APP_KeysHandler);
   AD7606_Init();
+  AD7606_Config config = {
+      .range = AD_RANGE_5V,
+      .oversample = AD_OVERSAMPLE_NONE,
+      .channels = 0x2,
+  };
+  AD7606_SetConfig(&config);
+  AD7606_ApplyConfig();
   DAC8830_Init();
 
   printf("Hello World!\r\n");
-  DAC8830_SetVoltage(2, 0xAAAA);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,7 +124,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    KEYS_Scan();
+    // KEYS_Scan();
+    APP_TestADC();
+    HAL_Delay(2000);
   }
   /* USER CODE END 3 */
 }
@@ -181,32 +190,35 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int16_t adc_buffer[128];
-void APP_KeysHandler(uint8_t key, uint8_t state) {
-  if (state == KEYS_STATE_PRESS) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-  } else if (state == KEYS_STATE_RELEASE) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-  } else if (state == KEYS_STATE_LONG_PRESS) {
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-  }
+int16_t adc_buffer[256];
 
+void APP_TestADC() {
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  BOOL ok = AD7606_CollectSamples(256, 200000, adc_buffer);
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+  if (!ok) {
+    printf("collect samples failed\r\n");
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+  } else {
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+  }
+  for (int i = 0; i < 256; i++) {
+    printf("%d,", adc_buffer[i]);
+  }
+  printf("\n");
+}
+
+void APP_KeysHandler(uint8_t key, uint8_t state) {
   if (key == 0 && state == KEYS_STATE_PRESS) {
     uint16_t data[8] = {0};
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
     AD7606_Sample(data);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
     printf("data=%d\r\n", (int)data[0]);
   }
 
   if (key == 1 && state == KEYS_STATE_PRESS) {
-    BOOL ok = AD7606_CollectSamples(128, 2000, adc_buffer);
-    if (!ok) {
-      printf("collect samples failed\r\n");
-    }
-    for (int i = 0; i < 128; i++) {
-      printf("%d,", adc_buffer[i]);
-    }
-    printf("\n");
+    APP_TestADC();
   }
 }
 

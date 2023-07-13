@@ -37,6 +37,6 @@ void AD7606_Sample(uint16_t *output);
 // Collect samples from the AD7606 synchronously. This function blocks until
 // all samples are collected. Units for sampleRate is Hz. Return whether the
 // operation is successful.
-BOOL AD7606_CollectSamples(int count, int sampleRate, uint16_t *output);
+BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output);
 
 void AD7606_TimerCallback(void);

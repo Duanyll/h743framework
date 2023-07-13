@@ -37,7 +37,6 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 Core/Src/ad7606.c \
-Core/Src/ad7606_old.c \
 Core/Src/cJSON.c \
 Core/Src/dac8830.c \
 Core/Src/gpio.c \
