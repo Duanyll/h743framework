@@ -113,6 +113,10 @@ void Error_Handler(void);
 #define AD_DB15_GPIO_Port GPIOD
 #define AD_BUSY_Pin GPIO_PIN_6
 #define AD_BUSY_GPIO_Port GPIOC
+#define DDS_RST_Pin GPIO_PIN_8
+#define DDS_RST_GPIO_Port GPIOA
+#define DDS_IOUP_Pin GPIO_PIN_9
+#define DDS_IOUP_GPIO_Port GPIOA
 #define AD_DB7_Pin GPIO_PIN_0
 #define AD_DB7_GPIO_Port GPIOD
 #define AD_DB6_Pin GPIO_PIN_1
@@ -133,6 +137,12 @@ void Error_Handler(void);
 #define AD_CONVSTA_GPIO_Port GPIOB
 #define AD_CONVSTB_Pin GPIO_PIN_6
 #define AD_CONVSTB_GPIO_Port GPIOB
+#define DDS_CS_Pin GPIO_PIN_7
+#define DDS_CS_GPIO_Port GPIOB
+#define DDS_CLK_Pin GPIO_PIN_8
+#define DDS_CLK_GPIO_Port GPIOB
+#define DDS_SDIO0_Pin GPIO_PIN_9
+#define DDS_SDIO0_GPIO_Port GPIOB
 #define SWITCH4_Pin GPIO_PIN_0
 #define SWITCH4_GPIO_Port GPIOE
 #define SWITCH3_Pin GPIO_PIN_1

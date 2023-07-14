@@ -10,6 +10,13 @@
 // PLL_LE
 // PLL_CE (May be tied to HIGH)
 
+/* ------------------------------ ADF4351 Usage ------------------------------ */
+// 1. Call ADF4351_Init() to init device
+// 2. Create ADF4351_Config structure and init it with ADF4351_InitConfig()
+// 3. Edit control registers in ADF4351_Config structure.
+// 4. Set frequency with ADF4351_SetFrequency() function.
+// 5. Call ADF4351_WriteConfig() to apply changes.
+
 /** \brief  Union type for the structure of Register0 in ADF4351
  */
 typedef union {

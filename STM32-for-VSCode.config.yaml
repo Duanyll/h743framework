@@ -25,6 +25,7 @@ cDefinitions:
   - AD7606_PARALLEL_INTERFACE
   - DAC8830_ENABLE
   - AD9959_ENABLE
+  - ARM_MATH_CM7
 cxxDefinitions: []
 asDefinitions: []
 
@@ -55,9 +56,13 @@ linkerFlags:
 libraries: 
   - c
   - m
+  - nosys
+  - arm_cortexM7lfdp_math
 
 # Library directories. Folders can be added here that contain custom libraries.
-libraryDirectories: []
+libraryDirectories: 
+  - Drivers/CMSIS/DSP/Lib/ARM
+  - Drivers/CMSIS/DSP/Lib/GCC
 
 # Files or folders that will be excluded from compilation.
 # Glob patterns (https://www.wikiwand.com/en/Glob_(programming)) can be used.
@@ -81,6 +86,7 @@ includeDirectories:
   - Core/Src/**
   - Core/Lib/**
   - Drivers/Peripherals/**
+  - Drivers/CMSIS/DSP/Include/
 
 
 # Files that should be included in the compilation.

@@ -48,6 +48,7 @@ Core/Src/tim.c \
 Core/Src/usart.c \
 Drivers/Peripherals/ad7606.c \
 Drivers/Peripherals/ad9834.c \
+Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
 Drivers/Peripherals/dac8830.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
@@ -129,6 +130,7 @@ C_DEFS =  \
 -DAD7606_ENABLE \
 -DAD7606_PARALLEL_INTERFACE \
 -DAD9959_ENABLE \
+-DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
 -DSTM32H743xx \
 -DUSE_HAL_DRIVER
@@ -146,6 +148,7 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-IDrivers/CMSIS/DSP/Include/ \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/Peripherals \
@@ -182,8 +185,10 @@ CXXFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 LDSCRIPT = STM32H743VITx_FLASH.ld
 
 # libraries
-LIBS = -lc -lm -lnosys 
+LIBS = -larm_cortexM7lfdp_math -lc -lm -lnosys 
 LIBDIR = \
+-LDrivers/CMSIS/DSP/Lib/ARM \
+-LDrivers/CMSIS/DSP/Lib/GCC
 
 
 # Additional LD Flags from config file

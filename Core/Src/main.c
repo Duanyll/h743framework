@@ -26,10 +26,13 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 
+#include "arm_math.h"
+
 #include "keys.h"
 #include "retarget.h"
 #include "ad7606.h"
 #include "dac8830.h"
+#include "ad9959.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,13 +53,16 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+AD9959_GlobalConfig ad9959_global_config;
+AD9959_ChannelConfig ad9959_channel0_config;
+AD9959_ChannelConfig ad9959_channel1_config;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void APP_TestADC();
+void APP_InitDDS();
 void APP_KeysHandler(uint8_t key, uint8_t state);
 /* USER CODE END PFP */
 
@@ -114,6 +120,8 @@ int main(void)
   AD7606_ApplyConfig();
   DAC8830_Init();
 
+  APP_InitDDS();
+
   printf("Hello World!\r\n");
   /* USER CODE END 2 */
 
@@ -158,7 +166,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 2;
-  RCC_OscInitStruct.PLL.PLLN = 80;
+  RCC_OscInitStruct.PLL.PLLN = 100;
   RCC_OscInitStruct.PLL.PLLP = 2;
   RCC_OscInitStruct.PLL.PLLQ = 8;
   RCC_OscInitStruct.PLL.PLLR = 2;
@@ -222,6 +230,26 @@ void APP_KeysHandler(uint8_t key, uint8_t state) {
   }
 }
 
+void APP_InitDDS() {
+  AD9959_Init(&ad9959_global_config);
+  double sysclk = 500e6;
+  AD9959_InitChannelConfig(&ad9959_channel0_config);
+  AD9959_InitChannelConfig(&ad9959_channel1_config);
+
+  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
+  AD9959_SetFrequency(&ad9959_channel0_config, 50e6, sysclk);
+  AD9959_SetPhase(&ad9959_channel0_config, 0);
+  AD9959_SetAmplitude(&ad9959_channel0_config, 1023);
+
+  AD9959_IOUpdate();
+
+  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
+  ad9959_channel1_config.cfr.dac_power_down = 1;
+  ad9959_channel1_config.cfr.digital_power_down = 1;
+  AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1_config.cfr.raw);
+
+  AD9959_IOUpdate();
+}
 /* USER CODE END 4 */
 
 /**

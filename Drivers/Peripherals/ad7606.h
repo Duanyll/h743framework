@@ -17,6 +17,16 @@
 // AD_CS
 // AD_BUSY
 // AD_D0 - AD_D15 (Parallel interface)
+// Also enable TIM2 and call AD7606_TimerCallback() in TIM2_IRQHandler().
+
+/* ------------------------------ AD7606 Usage ------------------------------ */
+// 1. Call AD7606_Init() to initialize the driver.
+// 2. Create a AD7606_Config struct and set the desired configuration.
+// 3. Call AD7606_SetConfig() to set the configuration.
+// 4. Call AD7606_ApplyConfig() to apply the configuration.
+// 5. Call AD7606_Sample() to sample one sample.
+// 6. Call AD7606_CollectSamples() to collect samples synchronously at given
+// sample rate.
 
 #define AD_RANGE_10V 1
 #define AD_RANGE_5V 0
@@ -45,11 +55,12 @@ void AD7606_Reset(void);
 // Update the configuration of the AD7606. Call AD7606_ApplyConfig() after this
 // to apply.
 int AD7606_SetConfig(AD7606_Config *config);
-// Take one sample from AD7606
+// Take one sample from AD7606. Only save enabled channels.
 void AD7606_Sample(uint16_t *output);
 // Collect samples from the AD7606 synchronously. This function blocks until
 // all samples are collected. Units for sampleRate is Hz. Return whether the
-// operation is successful.
+// operation is successful. Only save enabled channels into output in
+// interleaved format.
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output);
 
 void AD7606_TimerCallback(void);
