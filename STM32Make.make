@@ -47,6 +47,7 @@ Core/Src/system_stm32h7xx.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
 Drivers/Peripherals/ad7606.c \
+Drivers/Peripherals/ad7606b.c \
 Drivers/Peripherals/ad9834.c \
 Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
@@ -127,8 +128,7 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DAD7606_ENABLE \
--DAD7606_PARALLEL_INTERFACE \
+-DAD7606B_ENABLE \
 -DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \

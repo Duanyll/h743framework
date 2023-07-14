@@ -1,6 +1,3 @@
-/**
- * AD7606 driver. Supports one AD7606 chip with parallel interface.
- */
 #pragma once
 
 #ifdef AD7606_ENABLE
@@ -8,6 +5,7 @@
 #include "main.h"
 
 /* ------------------------------- AD7606 Pins ------------------------------ */
+// Use parallel interface. The following pins are used:
 // AD_PAR_SET (May be tied to LOW)
 // AD_STBY (May be tied to HIGH)
 // AD_RANGE
@@ -16,7 +14,11 @@
 // AD_RD
 // AD_CS
 // AD_BUSY
-// AD_D0 - AD_D15 (Parallel interface)
+// AD_RESET
+// AD_DB0 - AD_DB15: These pins are connected to the same GPIO port for fast
+// reading. If they are not connected in order, edit the code in
+// AD7606_ConvertData() to rearrange the bits into the correct order.
+//
 // Also enable TIM2 and call AD7606_TimerCallback() in TIM2_IRQHandler().
 
 /* ------------------------------ AD7606 Usage ------------------------------ */
@@ -56,6 +58,11 @@ void AD7606_Reset(void);
 // to apply.
 int AD7606_SetConfig(AD7606_Config *config);
 // Take one sample from AD7606. Only save enabled channels.
+
+// Convert the raw data from AD7606 to signed 16-bit integer.
+int16_t AD7606_ConvertData(uint16_t data);
+// Sample one sample from the AD7606 synchronously. Use AD7606_ConvertData() to
+// get real data.
 void AD7606_Sample(uint16_t *output);
 // Collect samples from the AD7606 synchronously. This function blocks until
 // all samples are collected. Units for sampleRate is Hz. Return whether the

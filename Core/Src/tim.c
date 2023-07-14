@@ -21,8 +21,15 @@
 #include "tim.h"
 
 /* USER CODE BEGIN 0 */
+#ifdef AD7606_ENABLE
 #include "ad7606.h"
+#endif
+#ifdef DAC8830_ENABLE
 #include "dac8830.h"
+#endif
+#ifdef AD7606B_ENABLE
+#include "ad7606b.h"
+#endif
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim2;
@@ -214,9 +221,16 @@ void delay_ms(uint32_t ms) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
   if (htim->Instance == TIM2) {
+#ifdef AD7606_ENABLE
     AD7606_TimerCallback();
+#endif
+#ifdef AD7606B_ENABLE
+    AD7606B_TimerCallback();
+#endif
   } else if (htim->Instance == TIM3) {
+#ifdef DAC8830_ENABLE
     DAC8830_TimerCallback();
+#endif
   }
 }
 /* USER CODE END 1 */

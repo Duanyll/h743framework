@@ -30,7 +30,7 @@
 
 #include "keys.h"
 #include "retarget.h"
-#include "ad7606.h"
+#include "ad7606b.h"
 #include "dac8830.h"
 #include "ad9959.h"
 /* USER CODE END Includes */
@@ -56,12 +56,15 @@
 AD9959_GlobalConfig ad9959_global_config;
 AD9959_ChannelConfig ad9959_channel0_config;
 AD9959_ChannelConfig ad9959_channel1_config;
+
+AD7606B_Config ad7606b_config;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void APP_TestADC();
+void APP_InitAD7606B();
 void APP_InitDDS();
 void APP_KeysHandler(uint8_t key, uint8_t state);
 /* USER CODE END PFP */
@@ -110,17 +113,10 @@ int main(void)
   RetargetInit(&huart1);
   KEYS_Init();
   KEYS_SetHandler(APP_KeysHandler);
-  AD7606_Init();
-  AD7606_Config config = {
-      .range = AD_RANGE_5V,
-      .oversample = AD_OVERSAMPLE_NONE,
-      .channels = 0x2,
-  };
-  AD7606_SetConfig(&config);
-  AD7606_ApplyConfig();
   DAC8830_Init();
 
   APP_InitDDS();
+  APP_InitAD7606B();
 
   printf("Hello World!\r\n");
   /* USER CODE END 2 */
@@ -198,11 +194,14 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-int16_t adc_buffer[256];
+#define AD_SAMPLE_RATE 20e3
+#define AD_SAMPLE_COUNT 1024
+
+int16_t adc_buffer[AD_SAMPLE_COUNT];
 
 void APP_TestADC() {
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-  BOOL ok = AD7606_CollectSamples(256, 200000, adc_buffer);
+  BOOL ok = AD7606B_CollectSamples(adc_buffer, 0x01, AD_SAMPLE_COUNT, AD_SAMPLE_RATE);
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
   if (!ok) {
     printf("collect samples failed\r\n");
@@ -210,24 +209,14 @@ void APP_TestADC() {
   } else {
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
   }
-  for (int i = 0; i < 256; i++) {
+  for (int i = 0; i < AD_SAMPLE_COUNT; i++) {
     printf("%d,", adc_buffer[i]);
   }
   printf("\n");
 }
 
 void APP_KeysHandler(uint8_t key, uint8_t state) {
-  if (key == 0 && state == KEYS_STATE_PRESS) {
-    uint16_t data[8] = {0};
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-    AD7606_Sample(data);
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-    printf("data=%d\r\n", (int)data[0]);
-  }
-
-  if (key == 1 && state == KEYS_STATE_PRESS) {
-    APP_TestADC();
-  }
+  
 }
 
 void APP_InitDDS() {
@@ -249,6 +238,14 @@ void APP_InitDDS() {
   AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1_config.cfr.raw);
 
   AD9959_IOUpdate();
+}
+
+void APP_InitAD7606B() {
+  AD7606B_Init();
+  AD7606B_InitConfig(&ad7606b_config);
+  AD7606B_SetRange(&ad7606b_config, 0, AD7606B_RANGE_2V5);
+  AD7606B_SetRange(&ad7606b_config, 1, AD7606B_RANGE_2V5);
+  AD7606B_LeaveRegisterMode();
 }
 /* USER CODE END 4 */
 
