@@ -163,8 +163,9 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
 
 BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
                             double sampleRate) {
+    // Note that clock for timer is 2x PCLK1
     int period =
-        round(HAL_RCC_GetPCLK1Freq() / (TIM2->PSC + 1) / sampleRate) - 1;
+        round(HAL_RCC_GetPCLK1Freq() * 2 / (TIM2->PSC + 1) / sampleRate) - 1;
     __HAL_TIM_SET_AUTORELOAD(&htim2, period);
     __HAL_TIM_SET_COUNTER(&htim2, 0);
     AD7606B_sampleCount = count;
@@ -184,6 +185,7 @@ BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
     for (int i = 0; i < sampleCount; i++) {
         data[i] = (int16_t)AD7606B_PinsToData(data[i]);
     }
+    return TRUE;
 }
 
 void AD7606B_TimerCallback() {

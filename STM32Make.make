@@ -41,6 +41,7 @@ Core/Src/gpio.c \
 Core/Src/keys.c \
 Core/Src/main.c \
 Core/Src/retarget.c \
+Core/Src/signal.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/system_stm32h7xx.c \
@@ -132,6 +133,7 @@ C_DEFS =  \
 -DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
+-DSIGNAL_F32_ENABLE \
 -DSTM32H743xx \
 -DUSE_HAL_DRIVER
 

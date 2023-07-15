@@ -136,7 +136,7 @@ void AD7606_Sample(uint16_t *output) {
 
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output) {
     // Config tim2 to trigger at sampleRate
-    int period = HAL_RCC_GetPCLK1Freq() / (TIM2->PSC + 1) / sampleRate - 1;
+    int period = HAL_RCC_GetPCLK1Freq() * 2 / (TIM2->PSC + 1) / sampleRate - 1;
     __HAL_TIM_SET_AUTORELOAD(&htim2, period);
     __HAL_TIM_SET_COUNTER(&htim2, 0);
     printf("period: %d\n", period);
