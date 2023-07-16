@@ -1,28 +1,28 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file    usart.c
-  * @brief   This file provides code for the configuration
-  *          of the USART instances.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    usart.c
+ * @brief   This file provides code for the configuration
+ *          of the USART instances.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 /* USER CODE END 0 */
 
@@ -246,91 +246,140 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 
 /* USER CODE BEGIN 1 */
 #define UART_RX_BUF_SIZE 1024
-#define UART_STATE_IDLE 0
-#define UART_STATE_RX 1
-#define UART_STATE_COMPLETE 2
+#define UART_STATE_JSON_WAIT 0     // waiting for '{'
+#define UART_STATE_JSON_RX 1       // receiving json, terminated by '\n'
+#define UART_STATE_JSON_COMPLETE 2 // json received
+#define UART_STATE_HEX_RX 3       // receiving hex, terminated by '\xff\xff\xff'
+#define UART_STATE_HEX_COMPLETE 4 // hex received
 typedef struct {
-  uint8_t* rx_cur;
-  uint8_t* rx_end;
+  uint8_t *rx_cur;
+  uint8_t *rx_end;
   uint8_t rx[UART_RX_BUF_SIZE];
   int state;
-  UART_HandleTypeDef* huart;
-} UartRxBuffer;
-UartRxBuffer uart_rx_buf;
+  UART_HandleTypeDef *huart;
+} UART_RxBuffer;
+UART_RxBuffer UART_rxBuf;
 
-void UART_ResetJsonRX(UART_HandleTypeDef* huart) {
-  uart_rx_buf.rx_cur = uart_rx_buf.rx;
-  uart_rx_buf.rx_end = uart_rx_buf.rx + UART_RX_BUF_SIZE;
-  uart_rx_buf.state = UART_STATE_IDLE;
-  uart_rx_buf.huart = huart;
-  HAL_UART_Receive_IT(huart, uart_rx_buf.rx_cur, 1);
+void UART_ResetJsonRX(UART_HandleTypeDef *huart) {
+  UART_rxBuf.rx_cur = UART_rxBuf.rx;
+  UART_rxBuf.rx_end = UART_rxBuf.rx + UART_RX_BUF_SIZE;
+  UART_rxBuf.state = UART_STATE_JSON_WAIT;
+  UART_rxBuf.huart = huart;
+  HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
-  if (huart == uart_rx_buf.huart) {
-    char ch = *uart_rx_buf.rx_cur;
-    if (uart_rx_buf.state == UART_STATE_IDLE) {
+void UART_ResetHexRX(UART_HandleTypeDef *huart) {
+  UART_rxBuf.rx_cur = UART_rxBuf.rx;
+  UART_rxBuf.rx_end = UART_rxBuf.rx + UART_RX_BUF_SIZE;
+  UART_rxBuf.state = UART_STATE_HEX_RX;
+  UART_rxBuf.huart = huart;
+  HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart == UART_rxBuf.huart) {
+    char ch = *UART_rxBuf.rx_cur;
+    // JSON mode
+    if (UART_rxBuf.state == UART_STATE_JSON_WAIT) {
       if (ch == '{') {
-        uart_rx_buf.state = UART_STATE_RX;
-        uart_rx_buf.rx_cur++;
+        UART_rxBuf.state = UART_STATE_JSON_RX;
+        UART_rxBuf.rx_cur++;
       }
-      HAL_UART_Receive_IT(huart, uart_rx_buf.rx_cur, 1);
-    } else if (uart_rx_buf.state == UART_STATE_RX) {
+      HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
+    } else if (UART_rxBuf.state == UART_STATE_JSON_RX) {
       if (ch == '\n') {
-        uart_rx_buf.state = UART_STATE_COMPLETE;
-        *uart_rx_buf.rx_cur = '\0';
+        UART_rxBuf.state = UART_STATE_JSON_COMPLETE;
+        *UART_rxBuf.rx_cur = '\0';
       } else {
-        uart_rx_buf.rx_cur++;
-        if (uart_rx_buf.rx_cur >= uart_rx_buf.rx_end) {
-          uart_rx_buf.rx_cur = uart_rx_buf.rx;
-          uart_rx_buf.state = UART_STATE_IDLE;
+        UART_rxBuf.rx_cur++;
+        if (UART_rxBuf.rx_cur >= UART_rxBuf.rx_end) {
+          UART_rxBuf.rx_cur = UART_rxBuf.rx;
+          UART_rxBuf.state = UART_STATE_JSON_WAIT;
           printf("UART Rx buffer overflow\n");
         }
-        HAL_UART_Receive_IT(huart, uart_rx_buf.rx_cur, 1);
+        HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
+      }
+      // HEX mode
+    } else if (UART_rxBuf.state == UART_STATE_HEX_RX) {
+      if (ch == '\xff' && UART_rxBuf.rx_cur - UART_rxBuf.rx >= 2 &&
+          *(UART_rxBuf.rx_cur - 1) == '\xff' &&
+          *(UART_rxBuf.rx_cur - 2) == '\xff') {
+        UART_rxBuf.state = UART_STATE_HEX_COMPLETE;
+        UART_rxBuf.rx_cur -= 2;
+        *UART_rxBuf.rx_cur = '\0';
+      } else {
+        UART_rxBuf.rx_cur++;
+        if (UART_rxBuf.rx_cur >= UART_rxBuf.rx_end) {
+          UART_rxBuf.rx_cur = UART_rxBuf.rx;
+          UART_rxBuf.state = UART_STATE_HEX_RX;
+          printf("UART Rx buffer overflow\n");
+        }
+        HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
       }
     }
-  } 
+  }
+}
+
+void UART_PollJsonData(void (*callback)(cJSON *json)) {
+  if (UART_rxBuf.state == UART_STATE_JSON_COMPLETE) {
+    cJSON *json = cJSON_Parse((char *)UART_rxBuf.rx);
+    (*callback)(json);
+    UART_ResetJsonRX(UART_rxBuf.huart);
+    cJSON_Delete(json);
+    free(json);
+  }
+}
+
+void UART_PollHexData(void (*callback)(uint8_t *data, int len)) {
+  if (UART_rxBuf.state == UART_STATE_HEX_COMPLETE) {
+    (*callback)(UART_rxBuf.rx, UART_rxBuf.rx_cur - UART_rxBuf.rx);
+    UART_ResetHexRX(UART_rxBuf.huart);
+  }
 }
 
 #define UART_TX_BUF_SIZE 1024
 typedef struct {
   uint8_t tx[UART_TX_BUF_SIZE];
-  BOOL is_busy;
-  UART_HandleTypeDef* huart;
-} UartTxBuffer;
+  BOOL isBusy;
+  UART_HandleTypeDef *huart;
+} UART_TxBuffer;
 
-UartTxBuffer uart_tx_buf;
-void UART_SendJson(UART_HandleTypeDef* huart, cJSON* json) {
-  char* str = cJSON_PrintUnformatted(json);
+UART_TxBuffer UART_txBuf;
+void UART_SendJson(UART_HandleTypeDef *huart, cJSON *json) {
+  char *str = cJSON_PrintUnformatted(json);
   UART_SendString(huart, str);
+  UART_SendString(huart, "\n");
   free(str);
 }
 
-void UART_SendString(UART_HandleTypeDef* huart, char* str) {
+void UART_SendString(UART_HandleTypeDef *huart, char *str) {
   int len = strlen(str);
   if (len < UART_TX_BUF_SIZE) {
-    while (uart_tx_buf.is_busy) {
+    while (UART_txBuf.isBusy) {
       // Wait for previous transmission to complete
     }
     // append newline
-    uart_tx_buf.huart = huart;
-    uart_tx_buf.is_busy = TRUE;
-    strcpy((char*)uart_tx_buf.tx, str);
-    uart_tx_buf.tx[len] = '\n';
-    HAL_UART_Transmit(huart, uart_tx_buf.tx, len + 1, 1000);
-    uart_tx_buf.is_busy = FALSE;
+    UART_txBuf.huart = huart;
+    UART_txBuf.isBusy = TRUE;
+    strcpy((char *)UART_txBuf.tx, str);
+    HAL_UART_Transmit(huart, UART_txBuf.tx, len, 1000);
+    UART_txBuf.isBusy = FALSE;
   } else {
     printf("UART_SendString: String too large\n");
   }
 }
 
-void UART_PollJsonData(void (*callback)(cJSON* json)) {
-  if (uart_rx_buf.state == UART_STATE_COMPLETE) {
-    cJSON* json = cJSON_Parse((char*)uart_rx_buf.rx);
-    (*callback)(json);
-    UART_ResetJsonRX(uart_rx_buf.huart);
-    cJSON_Delete(json);
-    free(json);
+void UART_Printf(UART_HandleTypeDef *huart, char *fmt, ...) {
+  while (UART_txBuf.isBusy) {
+    // Wait for previous transmission to complete
   }
+  UART_txBuf.huart = huart;
+  UART_txBuf.isBusy = TRUE;
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(UART_txBuf.tx, UART_TX_BUF_SIZE, fmt, args);
+  va_end(args);
+  HAL_UART_Transmit(huart, UART_txBuf.tx, strlen(UART_txBuf.tx), 1000);
+  UART_txBuf.isBusy = FALSE;
 }
 /* USER CODE END 1 */

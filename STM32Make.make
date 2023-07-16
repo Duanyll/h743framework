@@ -36,6 +36,7 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/app.c \
 Core/Src/cJSON.c \
 Core/Src/gpio.c \
 Core/Src/keys.c \
@@ -53,6 +54,7 @@ Drivers/Peripherals/ad9834.c \
 Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
 Drivers/Peripherals/dac8830.c \
+Drivers/Peripherals/screen.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
@@ -133,6 +135,7 @@ C_DEFS =  \
 -DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
+-DSCREEN_USE_ADDT \
 -DSIGNAL_F32_ENABLE \
 -DSTM32H743xx \
 -DUSE_HAL_DRIVER

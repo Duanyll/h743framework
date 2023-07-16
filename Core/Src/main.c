@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "dma.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -30,9 +29,7 @@
 #include "signal.h"
 #include "keys.h"
 #include "retarget.h"
-#include "ad7606b.h"
-#include "dac8830.h"
-#include "ad9959.h"
+#include "app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,20 +50,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-AD9959_GlobalConfig ad9959_global_config;
-AD9959_ChannelConfig ad9959_channel0_config;
-AD9959_ChannelConfig ad9959_channel1_config;
 
-AD7606B_Config ad7606b_config;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void APP_TestADC();
-void APP_InitAD7606B();
-void APP_InitAD9959();
-void APP_KeysHandler(uint8_t key, uint8_t state);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -105,21 +95,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   RetargetInit(&huart1);
-  KEYS_Init();
-  KEYS_SetHandler(APP_KeysHandler);
-  DAC8830_Init();
-
-  APP_InitAD9959();
-  APP_InitAD7606B();
-
-  printf("Hello World!\r\n");
+  APP_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -129,9 +111,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // KEYS_Scan();
-    APP_TestADC();
-    HAL_Delay(2000);
+    APP_Loop();
+    // HAL_Delay(100);
   }
   /* USER CODE END 3 */
 }
@@ -195,78 +176,9 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-#define AD_SAMPLE_RATE 100e3
-#define AD_SAMPLE_COUNT 1024
-
-int16_t adc_buffer[AD_SAMPLE_COUNT];
-
-void APP_TestADC() {
-  int startTime = HAL_GetTick();
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-  BOOL ok = AD7606B_CollectSamples(adc_buffer, 0x01, AD_SAMPLE_COUNT, AD_SAMPLE_RATE);
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-  if (!ok) {
-    printf("collect samples failed\r\n");
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-  } else {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-  }
-  SIGNAL_TimeDataQ15 timeData = {
-    .points = AD_SAMPLE_COUNT,
-    .timeDataOffset = 0,
-    .timeDataStride = 1,
-    .sampleRate = AD_SAMPLE_RATE,
-    .timeData = adc_buffer,
-  };
-  SIGNAL_SpectrumF32 spectrum;
-  SIGNAL_TimeQ15ToSpectrumF32(&timeData, &spectrum);
-  int endTime = HAL_GetTick();
-  printf("--------------------\r\n");
-  printf("Time: %dms\r\n", endTime - startTime);
-  printf("DC: %lf\r\n", spectrum.dc);
-  printf("PeakFreq: %lfHz\r\n", spectrum.peakFreq);
-  printf("PeakAmp: %lf\r\n", spectrum.peakAmp);
-  for (int i = 0; i < timeData.points; i++) {
-    printf("%d,", (int)timeData.timeData[i]);
-  }
-  printf("\r\n--------------------\r\n");
-  for (int i = 0; i < spectrum.points; i++) {
-    printf("%f,", spectrum.ampData[i]);
-  }
-  printf("\r\n");
-}
 
 void APP_KeysHandler(uint8_t key, uint8_t state) {
   
-}
-
-void APP_InitAD9959() {
-  AD9959_Init(&ad9959_global_config);
-  double sysclk = 500e6;
-  AD9959_InitChannelConfig(&ad9959_channel0_config);
-  AD9959_InitChannelConfig(&ad9959_channel1_config);
-
-  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0_config, 50e6, sysclk);
-  AD9959_SetPhase(&ad9959_channel0_config, 0);
-  AD9959_SetAmplitude(&ad9959_channel0_config, 1023);
-
-  AD9959_IOUpdate();
-
-  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
-  ad9959_channel1_config.cfr.dac_power_down = 1;
-  ad9959_channel1_config.cfr.digital_power_down = 1;
-  AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1_config.cfr.raw);
-
-  AD9959_IOUpdate();
-}
-
-void APP_InitAD7606B() {
-  AD7606B_Init();
-  AD7606B_InitConfig(&ad7606b_config);
-  AD7606B_SetRange(&ad7606b_config, 0, AD7606B_RANGE_2V5);
-  AD7606B_SetRange(&ad7606b_config, 1, AD7606B_RANGE_2V5);
-  AD7606B_LeaveRegisterMode();
 }
 /* USER CODE END 4 */
 

@@ -14,6 +14,7 @@ typedef struct SIGNAL_TimeDataQ15 {
   int16_t *timeData;  // pointer to the time data. by setting timeDataOffset and
                       // timeDataStride, multiple signals can be stored in the
                       // same buffer.
+  float range;        // range of the signal +/- range
 } SIGNAL_TimeDataQ15;
 
 typedef struct SIGNAL_SpectrumQ15 {
@@ -21,9 +22,9 @@ typedef struct SIGNAL_SpectrumQ15 {
   double sampleRate; // sample rate of the signal
   int16_t *ampData;  // pointer to the amplitude data
   int16_t *cfftData; // pointer to the complex FFT data
-  double dc;         // dc component
+  int16_t dc;        // dc component
   double peakFreq;   // frequency of the peak
-  double peakAmp;    // amplitude of the peak
+  int16_t peakAmp;   // amplitude of the peak
 } SIGNAL_SpectrumQ15;
 
 typedef struct SIGNAL_SpectrumF32 {
@@ -31,9 +32,9 @@ typedef struct SIGNAL_SpectrumF32 {
   double sampleRate; // sample rate of the signal
   float *ampData;    // pointer to the amplitude data
   float *cfftData;   // pointer to the complex FFT data
-  double dc;         // dc component
+  float dc;         // dc component
   double peakFreq;   // frequency of the peak
-  double peakAmp;    // amplitude of the peak
+  float peakAmp;    // amplitude of the peak
 } SIGNAL_SpectrumF32;
 
 #ifdef SIGNAL_Q15_ENABLE

@@ -2,7 +2,7 @@
 
 #include "signal.h"
 
-#ifdef SIGNAL_Q15_ENABLE 
+#ifdef SIGNAL_Q15_ENABLE
 
 arm_cfft_radix4_instance_q15 SIGNAL_fftInstanceQ15;
 int16_t SIGNAL_fftBufferQ15[SIGNAL_MAX_POINTS * 2];
@@ -46,8 +46,16 @@ float32_t SIGNAL_magBufferF32[SIGNAL_MAX_POINTS];
 void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
                                  SIGNAL_SpectrumF32 *freqData) {
   int idx = timeData->timeDataOffset;
+  int32_t mean = 0;
   for (int i = 0; i < timeData->points; i++) {
-    SIGNAL_fftBufferF32[i * 2] = timeData->timeData[idx];
+    mean += timeData->timeData[idx];
+    idx += timeData->timeDataStride;
+  }
+  mean /= timeData->points;
+  idx = timeData->timeDataOffset;
+  for (int i = 0; i < timeData->points; i++) {
+    SIGNAL_fftBufferF32[i * 2] =
+        (timeData->timeData[idx] - mean) / 32768.0f * timeData->range;
     SIGNAL_fftBufferF32[i * 2 + 1] = 0;
     idx += timeData->timeDataStride;
   }
@@ -59,7 +67,7 @@ void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
   freqData->sampleRate = timeData->sampleRate;
   freqData->ampData = SIGNAL_magBufferF32;
   freqData->cfftData = SIGNAL_fftBufferF32;
-  freqData->dc = SIGNAL_magBufferF32[0];
+  freqData->dc = mean / 32768.0f * timeData->range;
   freqData->peakAmp = 0;
   freqData->peakFreq = 0;
   for (int i = 1; i < freqData->points; i++) {
