@@ -2,6 +2,29 @@
 
 #include "signal.h"
 
+#define SIGNAL_HISTOGRAM_SIZE 100
+#define PEAKS_POINTS_THRESHOLD_PERCENT 0.01f
+#define PEAKS_HISTOGRAM_THRESHOLD 0.2f
+static uint16_t SIGNAL_histogram[SIGNAL_HISTOGRAM_SIZE];
+
+// The first PEAKS_POINTS_THRESHOLD_PERCENT of the points should occupy the most
+// place in the histogram, determined by PEAKS_HISTOGRAM_THRESHOLD
+static BOOL SIGNAL_DetectPeaksFromHistogram(int thresholdPoint,
+                                            int thresholdAmp) {
+  int pointCount = 0;
+  for (int i = SIGNAL_HISTOGRAM_SIZE - 1; i >= 0; i--) {
+    pointCount += SIGNAL_histogram[i];
+    if (pointCount >= thresholdPoint) {
+      if (i <= thresholdAmp) {
+        return TRUE;
+      } else {
+        return FALSE;
+      }
+    }
+  }
+  return FALSE;
+}
+
 #ifdef SIGNAL_Q15_ENABLE
 
 arm_cfft_radix4_instance_q15 SIGNAL_fftInstanceQ15;
@@ -10,11 +33,11 @@ int16_t SIGNAL_magBufferQ15[SIGNAL_MAX_POINTS];
 
 void SIGNAL_TimeQ15ToSpectrumQ15(SIGNAL_TimeDataQ15 *timeData,
                                  SIGNAL_SpectrumQ15 *freqData) {
-  int idx = timeData->timeDataOffset;
+  int idx = timeData->offset;
   for (int i = 0; i < timeData->points; i++) {
     SIGNAL_fftBufferQ15[i * 2] = timeData->timeData[idx];
     SIGNAL_fftBufferQ15[i * 2 + 1] = 0;
-    idx += timeData->timeDataStride;
+    idx += timeData->stride;
   }
   SIGNAL_fftInstanceQ15.fftLen = timeData->points;
   arm_cfft_radix4_init_q15(&SIGNAL_fftInstanceQ15, timeData->points, 0, 1);
@@ -43,38 +66,120 @@ arm_cfft_radix4_instance_f32 SIGNAL_fftInstanceF32;
 float32_t SIGNAL_fftBufferF32[SIGNAL_MAX_POINTS * 2];
 float32_t SIGNAL_magBufferF32[SIGNAL_MAX_POINTS];
 
-void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
-                                 SIGNAL_SpectrumF32 *freqData) {
-  int idx = timeData->timeDataOffset;
-  int32_t mean = 0;
-  for (int i = 0; i < timeData->points; i++) {
-    mean += timeData->timeData[idx];
-    idx += timeData->timeDataStride;
-  }
-  mean /= timeData->points;
-  idx = timeData->timeDataOffset;
-  for (int i = 0; i < timeData->points; i++) {
-    SIGNAL_fftBufferF32[i * 2] =
-        (timeData->timeData[idx] - mean) / 32768.0f * timeData->range;
-    SIGNAL_fftBufferF32[i * 2 + 1] = 0;
-    idx += timeData->timeDataStride;
-  }
-  SIGNAL_fftInstanceF32.fftLen = timeData->points;
-  arm_cfft_radix4_init_f32(&SIGNAL_fftInstanceF32, timeData->points, 0, 1);
+void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
+                       double sampleRate) {
+  SIGNAL_fftInstanceF32.fftLen = points;
+  arm_cfft_radix4_init_f32(&SIGNAL_fftInstanceF32, points, 0, 1);
   arm_cfft_radix4_f32(&SIGNAL_fftInstanceF32, SIGNAL_fftBufferF32);
-  arm_cmplx_mag_f32(SIGNAL_fftBufferF32, SIGNAL_magBufferF32, timeData->points);
-  freqData->points = timeData->points / 2;
-  freqData->sampleRate = timeData->sampleRate;
+  arm_cmplx_mag_f32(SIGNAL_fftBufferF32, SIGNAL_magBufferF32, points);
+  freqData->points = points / 2;
+  freqData->sampleRate = sampleRate;
   freqData->ampData = SIGNAL_magBufferF32;
   freqData->cfftData = SIGNAL_fftBufferF32;
-  freqData->dc = mean / 32768.0f * timeData->range;
   freqData->peakAmp = 0;
   freqData->peakFreq = 0;
   for (int i = 1; i < freqData->points; i++) {
     if (SIGNAL_magBufferF32[i] > freqData->peakAmp) {
       freqData->peakAmp = SIGNAL_magBufferF32[i];
-      freqData->peakFreq = i * timeData->sampleRate / timeData->points;
+      freqData->peakFreq = i * sampleRate / points;
     }
+  }
+}
+
+void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
+                                 SIGNAL_SpectrumF32 *freqData) {
+  int idx = timeData->offset;
+  int32_t mean = 0;
+  for (int i = 0; i < timeData->points; i++) {
+    mean += timeData->timeData[idx];
+    idx += timeData->stride;
+  }
+  mean /= timeData->points;
+  idx = timeData->offset;
+  for (int i = 0; i < timeData->points; i++) {
+    SIGNAL_fftBufferF32[i * 2] =
+        (timeData->timeData[idx] - mean) / 32768.0f * timeData->range;
+    SIGNAL_fftBufferF32[i * 2 + 1] = 0;
+    idx += timeData->stride;
+  }
+  freqData->dc = mean / 32768.0f * timeData->range;
+  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate);
+}
+
+void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
+                                 SIGNAL_SpectrumF32 *freqData) {
+  int idx = timeData->offset;
+  float32_t mean = 0;
+  for (int i = 0; i < timeData->points; i++) {
+    mean += timeData->timeData[idx];
+    idx += timeData->stride;
+  }
+  mean /= timeData->points;
+  idx = timeData->offset;
+  for (int i = 0; i < timeData->points; i++) {
+    SIGNAL_fftBufferF32[i * 2] = timeData->timeData[idx] - mean;
+    SIGNAL_fftBufferF32[i * 2 + 1] = 0;
+    idx += timeData->stride;
+  }
+  freqData->dc = mean;
+  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate);
+}
+
+void SIGNAL_FindPeaksF32(SIGNAL_SpectrumF32 *freqData, SIGNAL_PeaksF32 *peaks,
+                         float height, int distance) {
+  peaks->count = 0;
+  int lastPeak = -distance;
+  float *amp = freqData->ampData;
+  for (int i = 1; i < freqData->points - 1; i++) {
+    if (amp[i] > height && amp[i] > amp[i - 1] && amp[i] > amp[i + 1] &&
+        i - lastPeak > distance) {
+      if (i - lastPeak > distance && peaks->count < SIGNAL_MAX_PEAKS) {
+        peaks->peaks[peaks->count].amp = amp[i];
+        peaks->peaks[peaks->count].freq =
+            i * freqData->sampleRate / freqData->points;
+        peaks->count++;
+        lastPeak = i;
+      } else if (amp[i] > peaks->peaks[peaks->count - 1].amp) {
+        peaks->peaks[peaks->count - 1].amp = amp[i];
+        peaks->peaks[peaks->count - 1].freq =
+            i * freqData->sampleRate / freqData->points;
+        lastPeak = i;
+      }
+    }
+  }
+}
+
+double SIGNAL_GetCorrelationF32(const float *x, const float *y, int n) {
+  double sumX = 0;
+  double sumY = 0;
+  double sumXY = 0;
+  double sumX2 = 0;
+  double sumY2 = 0;
+  for (int i = 0; i < n; i++) {
+    sumX += x[i];
+    sumY += y[i];
+    sumXY += x[i] * y[i];
+    sumX2 += x[i] * x[i];
+    sumY2 += y[i] * y[i];
+  }
+  double numerator = n * sumXY - sumX * sumY;
+  double denominator =
+      sqrt(n * sumX2 - sumX * sumX) * sqrt(n * sumY2 - sumY * sumY);
+  return numerator / denominator;
+}
+
+#define M_PI 3.14159265358979323846
+
+void SIGNAL_UnwrapPhaseF32(float *phase, int n) {
+  float last = phase[0];
+  for (int i = 1; i < n; i++) {
+    float diff = phase[i] - last;
+    if (diff > M_PI) {
+      phase[i] -= 2 * M_PI;
+    } else if (diff < -M_PI) {
+      phase[i] += 2 * M_PI;
+    }
+    last = phase[i];
   }
 }
 

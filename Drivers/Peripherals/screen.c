@@ -1,3 +1,6 @@
+#include <string.h>
+#include <math.h>
+
 #include "screen.h"
 
 #include "tim.h"
@@ -53,10 +56,41 @@ void SCREEN_TransmitPlotData(const char *controlId, int channel, uint8_t *data,
 #endif
 }
 
-// void (*SCREEN_userInputCallback)(uint8_t *data, int len);
-// void SCREEN_UartCallback(uint8_t *data, int len) {}
+void SCREEN_NumberBuffer_Init(SCREEN_NumberBuffer *buf, const char *controlId,
+                              const char *format, int updateInterval) {
+  buf->head = 0;
+  buf->tail = 0;
+  buf->sum = 0;
+  buf->size = 0;
+  buf->lastUpdateTick = 0;
+  buf->updateInterval = updateInterval;
+  strcpy(buf->controlId, controlId);
+  strcpy(buf->format, format);
+}
 
-// void SCREEN_HandleInput(void (*callback)(uint8_t *data, int len)) {
-//   SCREEN_userInputCallback = callback;
-//   UART_PollHexData(SCREEN_UartCallback);
-// }
+void SCREEN_NumberBuffer_Update(SCREEN_NumberBuffer *buf, double value) {
+  double avg = (buf->size == 0) ? 0 : buf->sum / buf->size;
+  if (fabs(value - avg) > SCREEN_DROP_AVERAGE_THRESHOLD * avg) {
+    // clear buffer
+    buf->head = 0;
+    buf->tail = 0;
+    buf->sum = 0;
+    buf->size = 0;
+  }
+  if (buf->size == SCREEN_OUTOUT_BUF_SIZE) {
+    // buffer full, drop oldest value
+    buf->sum -= buf->buf[buf->tail];
+    buf->tail = (buf->tail + 1) % SCREEN_OUTOUT_BUF_SIZE;
+    buf->size--;
+  }
+  buf->buf[buf->head] = value;
+  buf->head = (buf->head + 1) % SCREEN_OUTOUT_BUF_SIZE;
+  buf->sum += value;
+  buf->size++;
+  int curTick = HAL_GetTick();
+  if (curTick - buf->lastUpdateTick > buf->updateInterval) {
+    buf->lastUpdateTick = curTick;
+    avg = (buf->size == 0) ? 0 : buf->sum / buf->size;
+    SCREEN_PrintText(buf->controlId, buf->format, avg);
+  }
+}

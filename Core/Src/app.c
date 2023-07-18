@@ -1,188 +1,22 @@
 #include <math.h>
+#include <stdlib.h>
 
 #include "app.h"
 
 #include "ad7606b.h"
 #include "ad9959.h"
+#include "dac8830.h"
 #include "keys.h"
 #include "screen.h"
 #include "signal.h"
 #include "usart.h"
 
-#define APP_MODE_NO_SCAN 0
-#define APP_MODE_AUTO_SCAN 1
-#define APP_MODE_SCAN_UP 2
-#define APP_MODE_SCAN_DOWN 3
-
-double APP_curFreq = 50e6;
-double APP_freqStep = 100e3;
-int APP_mode = APP_MODE_NO_SCAN;
-int APP_minFreq = 10e6;
-int APP_maxFreq = 200e6;
-
-BOOL APP_plotFlag = FALSE;
-
-#define APP_LONGPRESS_TIME 500
+UART_HandleTypeDef *computer_uart;
 
 AD9959_GlobalConfig ad9959_global_config;
 AD9959_ChannelConfig ad9959_channel0_config;
 AD9959_ChannelConfig ad9959_channel1_config;
-double ad9959_sysclk = 500e6;
-
-void APP_SetFreq(double freq) {
-  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0_config, freq, ad9959_sysclk);
-  AD9959_IOUpdate();
-}
-
-void APP_IncreaseFreq() {
-  APP_curFreq += APP_freqStep;
-  if (APP_curFreq > APP_maxFreq) {
-    APP_curFreq = APP_maxFreq;
-    APP_mode = APP_MODE_NO_SCAN;
-  }
-  APP_SetFreq(APP_curFreq);
-}
-
-void APP_DecreaseFreq() {
-  APP_curFreq -= APP_freqStep;
-  if (APP_curFreq < APP_minFreq) {
-    APP_curFreq = APP_minFreq;
-    APP_mode = APP_MODE_NO_SCAN;
-  }
-  APP_SetFreq(APP_curFreq);
-}
-
-void APP_UpdateFreq() {
-  switch (APP_mode) {
-  case APP_MODE_NO_SCAN:
-    break;
-  case APP_MODE_AUTO_SCAN:
-    if (APP_curFreq < APP_maxFreq) {
-      APP_IncreaseFreq();
-    } else {
-      APP_curFreq = APP_minFreq;
-      APP_SetFreq(APP_curFreq);
-    }
-    break;
-  case APP_MODE_SCAN_UP:
-    APP_IncreaseFreq();
-    break;
-  case APP_MODE_SCAN_DOWN:
-    APP_DecreaseFreq();
-    break;
-  }
-}
-
-void APP_HandleKeys(uint8_t key, uint8_t state) {
-  if (key == 0) {
-    if (state == KEYS_STATE_PRESS) {
-      APP_IncreaseFreq();
-    } else if (state == KEYS_STATE_LONG_PRESS) {
-      APP_mode = APP_MODE_SCAN_UP;
-    } else if (state == KEYS_STATE_RELEASE) {
-      APP_mode = APP_MODE_NO_SCAN;
-    }
-  }
-  if (key == 1) {
-    if (state == KEYS_STATE_PRESS) {
-      APP_DecreaseFreq();
-    } else if (state == KEYS_STATE_LONG_PRESS) {
-      APP_mode = APP_MODE_SCAN_DOWN;
-    } else if (state == KEYS_STATE_RELEASE) {
-      APP_mode = APP_MODE_NO_SCAN;
-    }
-  }
-  if (key == 2 && state == KEYS_STATE_PRESS) {
-    if (APP_mode == APP_MODE_AUTO_SCAN) {
-      APP_mode = APP_MODE_NO_SCAN;
-    } else {
-      APP_mode = APP_MODE_AUTO_SCAN;
-      APP_curFreq = APP_minFreq;
-    }
-  }
-  if (key == 3 && state == KEYS_STATE_PRESS) {
-    APP_plotFlag = TRUE;
-  }
-  if (key == 3 && state == KEYS_STATE_LONG_PRESS) {
-    APP_mode = APP_MODE_NO_SCAN;
-    APP_curFreq = 50e6;
-    APP_SetFreq(APP_curFreq);
-  }
-}
-
-void APP_HandleUARTCommand(uint8_t* data, int len) {
-  if (*data == '\x01') {
-    APP_plotFlag = TRUE;
-  }
-}
-
 AD7606B_Config ad7606b_config;
-
-#define AD_SAMPLE_RATE 40e3
-#define AD_SAMPLE_COUNT 1024
-
-int16_t adc_buffer[AD_SAMPLE_COUNT * 2];
-SIGNAL_TimeDataQ15 adc_time_data;
-SIGNAL_SpectrumF32 adc_freq_data0, adc_freq_data1;
-
-void APP_ADCSample() {
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-  BOOL ok =
-      AD7606B_CollectSamples(adc_buffer, 0x03, AD_SAMPLE_COUNT, AD_SAMPLE_RATE);
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-  if (!ok) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-  } else {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-  }
-}
-
-#define CLAMP(x, min, max) ((x) < (min) ? (min) : ((x) > (max) ? (max) : (x)))
-
-#define APP_PLOT_HEIGHT 180
-uint8_t APP_plotBuffer[AD_SAMPLE_COUNT];
-void APP_Plot(float *data, float range, int count, int channel) {
-  for (int i = 0; i < count; i++) {
-    APP_plotBuffer[i] =
-        CLAMP(roundf(data[i] / range * APP_PLOT_HEIGHT), 0, APP_PLOT_HEIGHT);
-  }
-  SCREEN_TransmitPlotData("s0", channel, APP_plotBuffer, count);
-}
-
-void APP_AnalysisADCData() {
-  SCREEN_PrintText("fbase", "%.1lfMHz", APP_curFreq / 1e6);
-
-  adc_time_data.points = AD_SAMPLE_COUNT;
-  adc_time_data.timeDataOffset = 0;
-  adc_time_data.timeDataStride = 2;
-  adc_time_data.timeData = adc_buffer;
-  adc_time_data.sampleRate = AD_SAMPLE_RATE;
-  adc_time_data.range = 2.5;
-  SIGNAL_TimeQ15ToSpectrumF32(&adc_time_data, &adc_freq_data0);
-
-  SCREEN_PrintText("ch1f", "%.1lfkHz", adc_freq_data0.peakFreq / 1e3);
-  SCREEN_PrintText("ch1a", "%.1lf", adc_freq_data0.peakAmp * 1e3);
-  if (APP_plotFlag) {
-    // APP_Plot(adc_freq_data0.ampData + 1, adc_freq_data0.peakAmp, 440, 0);
-    UART_Printf(&huart1, "\xff\xff\xff\xff");
-    HAL_UART_Transmit(&huart1, (uint8_t *)adc_freq_data0.ampData,
-                      sizeof(float) * 512, 1000);
-  }
-
-  adc_time_data.timeDataOffset = 1;
-  SIGNAL_TimeQ15ToSpectrumF32(&adc_time_data, &adc_freq_data1);
-
-  SCREEN_PrintText("ch2f", "%.1lfkHz", adc_freq_data1.peakFreq / 1e3);
-  SCREEN_PrintText("ch2a", "%.1lf", adc_freq_data1.peakAmp * 1e3);
-  if (APP_plotFlag) {
-    // APP_Plot(adc_freq_data1.ampData + 1, adc_freq_data1.peakAmp, 440, 1);
-    UART_Printf(&huart1, "\xff\xff\xff\xff");
-    HAL_UART_Transmit(&huart1, (uint8_t *)adc_freq_data1.ampData,
-                      sizeof(float) * 512, 1000);
-  }
-  APP_plotFlag = FALSE;
-}
 
 void APP_InitAD9959() {
   AD9959_Init(&ad9959_global_config);
@@ -191,7 +25,7 @@ void APP_InitAD9959() {
   AD9959_InitChannelConfig(&ad9959_channel1_config);
 
   AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0_config, 50e6, sysclk);
+  AD9959_SetFrequency(&ad9959_channel0_config, 100e6, sysclk);
   AD9959_SetPhase(&ad9959_channel0_config, 0);
   AD9959_SetAmplitude(&ad9959_channel0_config, 1023);
 
@@ -211,23 +45,303 @@ void APP_InitAD7606B() {
   AD7606B_InitConfig(&ad7606b_config);
   AD7606B_SetRange(&ad7606b_config, 0, AD7606B_RANGE_2V5);
   AD7606B_SetRange(&ad7606b_config, 1, AD7606B_RANGE_2V5);
+  AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
+  AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
   AD7606B_LeaveRegisterMode();
+}
+
+#define AD_SAMPLE_COUNT 2048
+int16_t ad_data[AD_SAMPLE_COUNT * 4];
+
+int popcount(uint8_t x) {
+  int count = 0;
+  while (x) {
+    count += x & 1;
+    x >>= 1;
+  }
+  return count;
+}
+
+void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
+                       uint32_t sample_rate) {
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  AD7606B_CollectSamples(ad_data, channels, sample_count, sample_rate);
+  HAL_UART_Transmit(computer_uart, "\xff\xff\xff\xff", 4, 1000);
+  HAL_UART_Transmit(computer_uart, (uint8_t *)ad_data,
+                    sample_count * 2 * popcount(channels), 10000);
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+}
+
+void APP_SetFrequency(uint32_t frequency) {
+  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
+  AD9959_SetFrequency(&ad9959_channel0_config, frequency, 500e6);
+  AD9959_IOUpdate();
+}
+
+static int compare_int16(const void *a, const void *b) {
+  return *(int16_t *)a - *(int16_t *)b;
+}
+
+float i_buf[AD_SAMPLE_COUNT];
+float q_buf[AD_SAMPLE_COUNT];
+
+#define DELTA_TOL 20
+
+int APP_IQRoughScan(uint32_t sample_count, uint32_t sample_rate) {
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  AD7606B_CollectSamples(ad_data, 0x0f, sample_count, sample_rate);
+  int16_t *i_buf_s16 = (int16_t *)i_buf;
+  int16_t *q_buf_s16 = (int16_t *)q_buf;
+  for (int i = 0; i < sample_count; i++) {
+    i_buf_s16[i] = ad_data[i * 4 + 0] - ad_data[i * 4 + 1];
+    q_buf_s16[i] = ad_data[i * 4 + 2] - ad_data[i * 4 + 3];
+  }
+  qsort(i_buf_s16, sample_count, sizeof(int16_t), compare_int16);
+  qsort(q_buf_s16, sample_count, sizeof(int16_t), compare_int16);
+  int16_t i_delta = i_buf_s16[sample_count - DELTA_TOL] - i_buf_s16[DELTA_TOL];
+  int16_t q_delta = q_buf_s16[sample_count - DELTA_TOL] - q_buf_s16[DELTA_TOL];
+
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+
+  return (i_delta > q_delta ? i_delta : q_delta);
+}
+
+typedef struct {
+  BOOL amDetected;
+  double frequency;
+  float fmAmplitude;
+} APP_IQPreciseScanResult;
+
+APP_IQPreciseScanResult APP_IQPreciseScan(uint32_t sample_count,
+                                          uint32_t sample_rate) {
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  AD7606B_CollectSamples(ad_data, 0x0f, sample_count, sample_rate);
+  for (int i = 0; i < sample_count; i++) {
+    i_buf[i] =
+        ((float)ad_data[i * 4 + 0] - (float)ad_data[i * 4 + 1]) / 32768 * 2.5;
+    q_buf[i] =
+        ((float)ad_data[i * 4 + 2] - (float)ad_data[i * 4 + 3]) / 32768 * 2.5;
+  }
+  double corr = SIGNAL_GetCorrelationF32(i_buf, q_buf, sample_count);
+  if (fabs(corr) > 0.7) {
+    APP_IQPreciseScanResult result;
+    result.amDetected = TRUE;
+    SIGNAL_TimeDataF32 amTimeData = {
+        .points = sample_count / 2,
+        .timeData = i_buf,
+        .offset = 0,
+        .stride = 2,
+        .sampleRate = sample_rate / 2,
+    };
+    SIGNAL_SpectrumF32 amSpectrum;
+    SIGNAL_TimeF32ToSpectrumF32(&amTimeData, &amSpectrum);
+    result.frequency = amSpectrum.peakFreq;
+    result.fmAmplitude = 0;
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+    return result;
+  }
+  double i_mean = 0;
+  double q_mean = 0;
+  for (int i = 0; i < sample_count; i++) {
+    i_mean += i_buf[i];
+    q_mean += q_buf[i];
+  }
+  i_mean /= sample_count;
+  q_mean /= sample_count;
+  for (int i = 0; i < sample_count; i++) {
+    i_buf[i] = atan2f(q_buf[i] - q_mean, i_buf[i] - i_mean);
+  }
+  SIGNAL_UnwrapPhaseF32(i_buf, sample_count);
+  SIGNAL_TimeDataF32 fmTimeData = {
+      .points = sample_count / 2,
+      .timeData = i_buf,
+      .offset = 0,
+      .stride = 2,
+      .sampleRate = sample_rate / 2,
+  };
+  SIGNAL_SpectrumF32 fmSpectrum;
+  SIGNAL_TimeF32ToSpectrumF32(&fmTimeData, &fmSpectrum);
+  APP_IQPreciseScanResult result;
+  result.amDetected = FALSE;
+  if (fmSpectrum.peakFreq < 3100 && fmSpectrum.peakFreq > 200) {
+    result.frequency = fmSpectrum.peakFreq;
+    result.fmAmplitude = fmSpectrum.peakAmp;
+  } else {
+    result.frequency = 0;
+    result.fmAmplitude = 0;
+  }
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+  return result;
+}
+
+typedef struct {
+  double basebandFrequency;
+  BOOL amDetected;
+  BOOL fmDetected;
+  double modulationFrequency;
+} APP_IQDemodulationResult;
+
+APP_IQDemodulationResult APP_IQFullScan() {
+  uint32_t sample_count = 2048;
+  uint32_t sample_rate = 200000;
+
+  uint32_t roughFrequency = 0;
+  int roughAmplitude = 0;
+  for (int freq = 30e6; freq <= 100e6; freq += 0.5e6) {
+    APP_SetFrequency(freq * 2);
+    HAL_Delay(10);
+    int amp = APP_IQRoughScan(sample_count, sample_rate);
+    UART_Printf(computer_uart, "Rough %d %d\n", freq, amp);
+    if (amp > roughAmplitude) {
+      roughAmplitude = amp;
+      roughFrequency = freq;
+    }
+  }
+
+  if (roughAmplitude < 20) {
+    APP_IQDemodulationResult result;
+    result.basebandFrequency = 0;
+    result.amDetected = FALSE;
+    result.fmDetected = FALSE;
+    result.modulationFrequency = 0;
+    return result;
+  }
+
+  uint32_t preciseFrequency = 0;
+  float preciseAmplitude = 0;
+  double fmFrequency = 0;
+  for (int freq = roughFrequency - 0.7e6; freq <= roughFrequency + 0.7e6;
+       freq += 0.01e6) {
+    APP_SetFrequency(freq * 2);
+    HAL_Delay(10);
+    APP_IQPreciseScanResult cur = APP_IQPreciseScan(sample_count, sample_rate);
+    UART_Printf(computer_uart, "Precise %d %d %.2f %.2lf\n", freq,
+                cur.amDetected, cur.fmAmplitude, cur.frequency);
+    if (cur.amDetected) {
+      APP_IQDemodulationResult result;
+      result.basebandFrequency = freq;
+      result.amDetected = TRUE;
+      result.fmDetected = FALSE;
+      result.modulationFrequency = cur.frequency;
+    } else if (cur.fmAmplitude > preciseAmplitude) {
+      preciseAmplitude = cur.fmAmplitude;
+      preciseFrequency = freq;
+      fmFrequency = cur.frequency;
+    }
+  }
+
+  APP_IQDemodulationResult result;
+  result.basebandFrequency = preciseFrequency;
+  result.amDetected = FALSE;
+  result.fmDetected = TRUE;
+  result.modulationFrequency = fmFrequency;
+  return result;
+}
+
+void APP_IQDemodulationTest(uint32_t sample_count, uint32_t sample_rate) {
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  AD7606B_CollectSamples(ad_data, 0x0f, sample_count, sample_rate);
+
+  HAL_UART_Transmit(computer_uart, "\xff\xff\xff\xff", 4, 1000);
+  /* ---------------------------- AM/FM Detection --------------------------- */
+  for (int i = 0; i < sample_count; i++) {
+    i_buf[i] =
+        ((float)ad_data[i * 4 + 0] - (float)ad_data[i * 4 + 1]) / 32768 * 2.5;
+    q_buf[i] =
+        ((float)ad_data[i * 4 + 2] - (float)ad_data[i * 4 + 3]) / 32768 * 2.5;
+  }
+  double corr = SIGNAL_GetCorrelationF32(i_buf, q_buf, sample_count);
+  HAL_UART_Transmit(computer_uart, (uint8_t *)&corr, sizeof(corr), 1000);
+
+  /* ----------------------------- AM Frequency ----------------------------- */
+  SIGNAL_TimeDataF32 amTimeData = {
+      .points = sample_count / 2,
+      .timeData = i_buf,
+      .offset = 0,
+      .stride = 2,
+      .sampleRate = sample_rate / 2,
+  };
+  SIGNAL_SpectrumF32 amSpectrum;
+  SIGNAL_TimeF32ToSpectrumF32(&amTimeData, &amSpectrum);
+  HAL_UART_Transmit(computer_uart, (uint8_t *)&amSpectrum.peakFreq,
+                    sizeof(amSpectrum.peakFreq), 1000);
+
+  /* ----------------------------- FM Frequency ----------------------------- */
+  double i_mean = 0;
+  double q_mean = 0;
+  for (int i = 0; i < sample_count; i++) {
+    i_mean += i_buf[i];
+    q_mean += q_buf[i];
+  }
+  i_mean /= sample_count;
+  q_mean /= sample_count;
+  for (int i = 0; i < sample_count; i++) {
+    i_buf[i] = atan2f(q_buf[i] - q_mean, i_buf[i] - i_mean);
+  }
+  SIGNAL_UnwrapPhaseF32(i_buf, sample_count);
+  SIGNAL_TimeDataF32 fmTimeData = {
+      .points = sample_count / 2,
+      .timeData = i_buf,
+      .offset = 0,
+      .stride = 2,
+      .sampleRate = sample_rate / 2,
+  };
+  SIGNAL_SpectrumF32 fmSpectrum;
+  SIGNAL_TimeF32ToSpectrumF32(&fmTimeData, &fmSpectrum);
+  // SIGNAL_PeaksF32 fmPeaks;
+  // SIGNAL_FindPeaksF32(&fmSpectrum, &fmPeaks, 0.3, 10);
+  double peakFreq = fmSpectrum.peakFreq;
+  // double peakAmp = 0;
+  // // Find the peak with the highest amplitude within 200Hz - 3100Hz
+  // for (int i = 0; i < fmPeaks.count; i++) {
+  //   if (fmPeaks.peaks[i].freq >= 200 && fmPeaks.peaks[i].freq <= 3100 &&
+  //       fmPeaks.peaks[i].amp > peakAmp) {
+  //     peakFreq = fmPeaks.peaks[i].freq;
+  //     peakAmp = fmPeaks.peaks[i].amp;
+  //   }
+  // }
+  HAL_UART_Transmit(computer_uart, (uint8_t *)&peakFreq, sizeof(peakFreq),
+                    1000);
+
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+}
+
+void APP_HexCommandCallback(uint8_t *data, int len) {
+  if (*data == '\x01') {
+    // 1 byte channels
+    // 4 byte sample count
+    // 4 byte sample rate
+    uint8_t channels = data[1];
+    uint32_t sample_count = *(uint32_t *)(data + 2);
+    uint32_t sample_rate = *(uint32_t *)(data + 6);
+    APP_UploadADCData(channels, sample_count, sample_rate);
+  } else if (*data == '\x02') {
+    // 4 byte frequency
+    uint32_t frequency = *(uint32_t *)(data + 1);
+    APP_SetFrequency(frequency);
+  } else if (*data == '\x03') {
+    // 4 byte sample count
+    // 4 byte sample rate
+    uint32_t sample_count = *(uint32_t *)(data + 1);
+    uint32_t sample_rate = *(uint32_t *)(data + 5);
+    APP_IQDemodulationTest(sample_count, sample_rate);
+  } else if (*data == '\x04') {
+    APP_IQDemodulationResult result = APP_IQFullScan();
+    UART_Printf(computer_uart, "Baseband: %.2lf\n", result.basebandFrequency);
+    UART_Printf(computer_uart, "AM: %d, FM: %d\n", result.amDetected,
+                result.fmDetected);
+    UART_Printf(computer_uart, "Modulation: %.2lf\n",
+                result.modulationFrequency);
+  }
 }
 
 void APP_Init() {
   APP_InitAD9959();
   APP_InitAD7606B();
-  SCREEN_Init(&huart2);
-  APP_SetFreq(50e6);
-  // KEYS_Init();
-  // KEYS_SetHandler(APP_HandleKeys);
-  UART_ResetHexRX(&huart1);
+  DAC8830_Init();
+  computer_uart = &huart2;
+  UART_ResetHexRX(computer_uart);
+  // AD7606B_StartContinuousConvert(100e3, 0x03, APP_ADCCallback);
 }
 
-void APP_Loop() {
-  // KEYS_Scan();
-  UART_PollHexData(APP_HandleUARTCommand);
-  APP_ADCSample();
-  APP_UpdateFreq();
-  APP_AnalysisADCData();
-}
+void APP_Loop() { UART_PollHexData(APP_HexCommandCallback); }

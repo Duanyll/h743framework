@@ -106,16 +106,32 @@ typedef struct {
 
 // Init the AD7606B
 void AD7606B_Init(void);
-// 
+// Full reset the AD7606B
 void AD7606B_FullReset(void);
+// Convert 16-bit data to 16-bit GPIO pins
 uint16_t AD7606B_DataToPins(uint16_t data);
+// Convert 16-bit GPIO pins to 16-bit data
 uint16_t AD7606B_PinsToData(uint16_t pins);
+// Read from a single register
 uint8_t AD7606B_ParallelRegisterRead(uint8_t addr);
+// Write to a single register
 void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data);
+// Leave register mode and enter ADC mode. This is required before taking
+// samples
 void AD7606B_LeaveRegisterMode(void);
+// Take one sample from AD7606B, manually call AD7606B_PinsToData to get real
+// data
 void AD7606B_ADCConvert(uint16_t *data, uint8_t channels);
+// Take multiple samples at given sample rate in blocking mode
 BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
                             double sampleRate);
+// Start continuous convert mode, call AD7606B_StopContinuousConvert to stop.
+// Recieve data in callback function asynchronously. LED1 indicates if the
+// callback takes too long to process at given sample rate.
+void AD7606B_StartContinuousConvert(double sampleRate, uint8_t channels,
+                                    void (*callback)(int16_t *data));
+// Stop continuous convert mode
+void AD7606B_StopContinuousConvert(void);
 void AD7606B_TimerCallback();
 
 void AD7606B_InitConfig(AD7606B_Config *config);

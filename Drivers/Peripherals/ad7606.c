@@ -12,10 +12,10 @@
 #define HIGH GPIO_PIN_SET
 
 AD7606_Config ad7606_config;
-BOOL ad7606_isSampling;
-int ad7606_sampleCount;
+volatile BOOL ad7606_isSampling;
+volatile int ad7606_sampleCount;
 uint16_t* ad7606_output;
-BOOL ad7606_badSampleFlag;
+volatile BOOL ad7606_badSampleFlag;
 
 void AD7606_Init(void) {
     ad7606_config.range = AD_RANGE_5V;

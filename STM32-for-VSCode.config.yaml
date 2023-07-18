@@ -10,7 +10,7 @@ target: h743framework
 # Can be C or C++
 language: C
 
-optimization: Og
+optimization: O2
 
 # MCU settings
 targetMCU: stm32h7x
@@ -116,6 +116,6 @@ customMakefileRules:
 
 # Additional flags which will be used when invoking the make command
 makeFlags:
-# - -O  # use this option when the output of make is mixed up only works for make version 4.0 and upwards
+- -O  # use this option when the output of make is mixed up only works for make version 4.0 and upwards
 - --silent # use this option to silence the output of the build
     
