@@ -306,6 +306,179 @@ void APP_IQDemodulationTest(uint32_t sample_count, uint32_t sample_rate) {
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 }
 
+typedef struct APP_FMAMResult {
+  double fmFreq;
+  double fmAmp;
+  double fmSNR;
+  double amFreq;
+  double amAmp;
+  double amSNR;
+} APP_FMAMResult;
+
+APP_FMAMResult APP_FMAMTestOnce() {
+  uint32_t sample_count = 1024;
+  uint32_t sample_rate = 100000;
+  AD7606B_CollectSamples(ad_data, 0x03, sample_count, sample_rate);
+  APP_FMAMResult result;
+  SIGNAL_TimeDataQ15 amData = {
+      .points = sample_count,
+      .timeData = ad_data,
+      .offset = 0,
+      .stride = 2,
+      .sampleRate = sample_rate,
+      .range = 2.5,
+  };
+  SIGNAL_SpectrumF32 amSpectrum;
+  SIGNAL_TimeQ15ToSpectrumF32(&amData, &amSpectrum);
+  result.amFreq = amSpectrum.peakFreq;
+  result.amAmp = amSpectrum.peakAmp;
+  result.amSNR = SIGNAL_SimpleSNR(&amSpectrum);
+
+  SIGNAL_TimeDataQ15 fmData = {
+      .points = sample_count,
+      .timeData = ad_data,
+      .offset = 1,
+      .stride = 2,
+      .sampleRate = sample_rate,
+      .range = 2.5,
+  };
+  SIGNAL_SpectrumF32 fmSpectrum;
+  SIGNAL_TimeQ15ToSpectrumF32(&fmData, &fmSpectrum);
+  result.fmFreq = fmSpectrum.peakFreq;
+  result.fmAmp = fmSpectrum.peakAmp;
+  result.fmSNR = SIGNAL_SimpleSNR(&fmSpectrum);
+  return result;
+}
+
+typedef struct APP_FMAMFinalResult {
+  double freq;
+  double amp;
+} APP_FMAMFinalResult;
+
+APP_FMAMFinalResult APP_FMAMFinalScan(BOOL isAm) {
+  uint32_t sample_count = 1024;
+  uint32_t sample_rate = 51200;
+  AD7606B_CollectSamples(ad_data, isAm ? 0x01 : 0x02, sample_count,
+                         sample_rate);
+  SIGNAL_TimeDataQ15 data = {
+      .points = sample_count,
+      .timeData = ad_data,
+      .offset = 0,
+      .stride = 1,
+      .sampleRate = sample_rate,
+      .range = 2.5,
+  };
+  SIGNAL_SpectrumF32 spectrum;
+  SIGNAL_TimeQ15ToSpectrumF32(&data, &spectrum);
+  APP_FMAMFinalResult result;
+  result.freq = spectrum.peakFreq;
+  result.amp = spectrum.peakAmp;
+  return result;
+}
+
+int16_t snr_buf[4001];
+
+void APP_FMAMScan() {
+  int16_t roughSNR1 = 0;
+  double roughFreq1 = 0;
+  for (int i = 1; i <= 2000; i++) {
+    APP_SetFrequency(i * 1e5);
+    HAL_Delay(8);
+    APP_FMAMResult result = APP_FMAMTestOnce();
+    UART_Printf(computer_uart,
+                "Rough AM, %d, %.2lf, %.2lf, %.2lf, FM, %.2lf, %.2lf, %.2lf\n",
+                i, result.amFreq, result.amAmp, result.amSNR, result.fmFreq,
+                result.fmAmp, result.fmSNR);
+    snr_buf[i] = fmax(result.fmSNR, result.amSNR);
+    if (snr_buf[i] > roughSNR1) {
+      roughSNR1 = snr_buf[i];
+      roughFreq1 = i * 1e5;
+    }
+  }
+  if (roughSNR1 <= 12) {
+    UART_Printf(computer_uart, "No signal found\n");
+    return;
+  }
+  int16_t roughSNR2 = 0;
+  double roughFreq2 = 0;
+  for (int i = 1; i <= 2000; i++) {
+    if (fabs(roughFreq1 - i * 1e5) < 5e6) {
+      continue;
+    }
+    if (snr_buf[i] > roughSNR2) {
+      roughSNR2 = snr_buf[i];
+      roughFreq2 = i * 1e5;
+    }
+  }
+  UART_Printf(computer_uart, ">>> %.2lf, %d, %.2lf, %d\n", roughFreq1,
+              (int)roughSNR1, roughFreq2, (int)roughSNR2);
+  double roughFreq = fmin(roughFreq1, roughFreq2);
+  double fineAmp = 0;
+  double fineFreq = 0;
+  double fineSNR = 0;
+  BOOL isAm = 0;
+  for (int freq = fmin(0, roughFreq - 150e3); freq <= roughFreq + 150e3; freq += 10000) {
+    APP_SetFrequency(freq);
+    HAL_Delay(2);
+    APP_FMAMResult result = APP_FMAMTestOnce();
+    // UART_Printf(computer_uart,
+    //             "Fine AM, %d, %.2lf, %.2lf, %.2lf, FM, %.2lf, %.2lf, %.2lf\n",
+    //             freq, result.amFreq, result.amAmp, result.amSNR, result.fmFreq,
+    //             result.fmAmp, result.fmSNR);
+    UART_Printf(computer_uart, ".");
+    if (result.amAmp > fineAmp) {
+      fineAmp = result.amAmp;
+      fineFreq = freq;
+      fineSNR = result.amSNR;
+      isAm = TRUE;
+    }
+    if (result.fmAmp > fineAmp && result.fmSNR > 75) {
+      fineAmp = result.fmAmp;
+      fineFreq = freq;
+      fineSNR = result.fmSNR;
+      isAm = FALSE;
+    }
+  }
+
+  // UART_Printf(computer_uart, "\n");
+  // UART_Printf(computer_uart, ">>> %.2lf, %.2lf, %.2lf\n", fineFreq, fineAmp,
+  //             fineSNR);
+
+  // if (fineSNR < 20) {
+  //   UART_Printf(computer_uart, "No signal found\n");
+  //   return;
+  // }
+
+  double finalAmp = 0;
+  double finalBaseband = 0;
+  double finalModulate = 0;
+  for (int freq = fmax(0, fineFreq - 50e3); freq < fineFreq + 50e3;
+       freq += 10e3) {
+    APP_SetFrequency(freq);
+    HAL_Delay(10);
+    double currentAmp = 0;
+    double currentFreq = 0;
+    for (int i = 0; i < 5; i++) {
+      APP_FMAMFinalResult result = APP_FMAMFinalScan(isAm);
+      currentAmp += result.amp;
+      currentFreq += result.freq;
+    }
+    currentAmp /= 5;
+    currentFreq /= 5;
+    UART_Printf(computer_uart, "Final %d, %.2lf, %.2lf\n", freq, currentAmp,
+                currentFreq);
+    if (currentAmp > finalAmp) {
+      finalAmp = currentAmp;
+      finalBaseband = freq;
+      finalModulate = currentFreq;
+    }
+  }
+  UART_Printf(computer_uart,
+              "%s signal found at %.2lfMHz, modulation frequency is %.2lfkHz\n",
+              isAm ? "AM" : "FM", finalBaseband / 1e6 + 10.7,
+              finalModulate / 1e3);
+}
+
 void APP_HexCommandCallback(uint8_t *data, int len) {
   if (*data == '\x01') {
     // 1 byte channels
@@ -332,6 +505,8 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
                 result.fmDetected);
     UART_Printf(computer_uart, "Modulation: %.2lf\n",
                 result.modulationFrequency);
+  } else if (*data == '\x05') {
+    APP_FMAMScan();
   }
 }
 

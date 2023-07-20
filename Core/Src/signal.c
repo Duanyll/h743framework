@@ -2,29 +2,6 @@
 
 #include "signal.h"
 
-#define SIGNAL_HISTOGRAM_SIZE 100
-#define PEAKS_POINTS_THRESHOLD_PERCENT 0.01f
-#define PEAKS_HISTOGRAM_THRESHOLD 0.2f
-static uint16_t SIGNAL_histogram[SIGNAL_HISTOGRAM_SIZE];
-
-// The first PEAKS_POINTS_THRESHOLD_PERCENT of the points should occupy the most
-// place in the histogram, determined by PEAKS_HISTOGRAM_THRESHOLD
-static BOOL SIGNAL_DetectPeaksFromHistogram(int thresholdPoint,
-                                            int thresholdAmp) {
-  int pointCount = 0;
-  for (int i = SIGNAL_HISTOGRAM_SIZE - 1; i >= 0; i--) {
-    pointCount += SIGNAL_histogram[i];
-    if (pointCount >= thresholdPoint) {
-      if (i <= thresholdAmp) {
-        return TRUE;
-      } else {
-        return FALSE;
-      }
-    }
-  }
-  return FALSE;
-}
-
 #ifdef SIGNAL_Q15_ENABLE
 
 arm_cfft_radix4_instance_q15 SIGNAL_fftInstanceQ15;
@@ -62,15 +39,22 @@ void SIGNAL_TimeQ15ToSpectrumQ15(SIGNAL_TimeDataQ15 *timeData,
 
 #ifdef SIGNAL_F32_ENABLE
 
-arm_cfft_radix4_instance_f32 SIGNAL_fftInstanceF32;
+arm_cfft_radix2_instance_f32 SIGNAL_fftInstance2F32;
+arm_cfft_radix4_instance_f32 SIGNAL_fftInstance4F32;
 float32_t SIGNAL_fftBufferF32[SIGNAL_MAX_POINTS * 2];
 float32_t SIGNAL_magBufferF32[SIGNAL_MAX_POINTS];
 
 void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
                        double sampleRate) {
-  SIGNAL_fftInstanceF32.fftLen = points;
-  arm_cfft_radix4_init_f32(&SIGNAL_fftInstanceF32, points, 0, 1);
-  arm_cfft_radix4_f32(&SIGNAL_fftInstanceF32, SIGNAL_fftBufferF32);
+  if (points == 64 || points == 256 || points == 1024 || points == 4096) {
+    SIGNAL_fftInstance4F32.fftLen = points;
+    arm_cfft_radix4_init_f32(&SIGNAL_fftInstance4F32, points, 0, 1);
+    arm_cfft_radix4_f32(&SIGNAL_fftInstance4F32, SIGNAL_fftBufferF32);
+  } else {
+    SIGNAL_fftInstance2F32.fftLen = points;
+    arm_cfft_radix2_init_f32(&SIGNAL_fftInstance2F32, points, 0, 1);
+    arm_cfft_radix2_f32(&SIGNAL_fftInstance2F32, SIGNAL_fftBufferF32);
+  }
   arm_cmplx_mag_f32(SIGNAL_fftBufferF32, SIGNAL_magBufferF32, points);
   freqData->points = points / 2;
   freqData->sampleRate = sampleRate;
@@ -78,7 +62,13 @@ void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
   freqData->cfftData = SIGNAL_fftBufferF32;
   freqData->peakAmp = 0;
   freqData->peakFreq = 0;
-  for (int i = 1; i < freqData->points; i++) {
+  BOOL dcLeakFlag = TRUE;
+  for (int i = 2; i < freqData->points; i++) {
+    if (dcLeakFlag && SIGNAL_magBufferF32[i] < SIGNAL_magBufferF32[i - 1]) {
+      continue;
+    } else {
+      dcLeakFlag = FALSE;
+    }
     if (SIGNAL_magBufferF32[i] > freqData->peakAmp) {
       freqData->peakAmp = SIGNAL_magBufferF32[i];
       freqData->peakFreq = i * sampleRate / points;
@@ -181,6 +171,15 @@ void SIGNAL_UnwrapPhaseF32(float *phase, int n) {
     }
     last = phase[i];
   }
+}
+
+double SIGNAL_SimpleSNR(SIGNAL_SpectrumF32 *freqData) {
+  double mean = 0;
+  for (int i = 1; i < freqData->points; i++) {
+    mean += freqData->ampData[i];
+  }
+  mean /= freqData->points - 1;
+  return freqData->peakAmp / mean;
 }
 
 #endif

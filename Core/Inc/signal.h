@@ -78,3 +78,5 @@ void SIGNAL_FindPeaksF32(SIGNAL_SpectrumF32 *freqData,
 double SIGNAL_GetCorrelationF32(const float *x, const float *y, int n);
 // Unwraps the phase of a signal in place
 void SIGNAL_UnwrapPhaseF32(float *phase, int n);
+
+double SIGNAL_SimpleSNR(SIGNAL_SpectrumF32 *freqData);
