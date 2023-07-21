@@ -24,9 +24,11 @@ cDefinitions:
   - AD7606B_ENABLE
   - DAC8830_ENABLE
   - AD9959_ENABLE
+  - SI5351_ENABLE
   - ARM_MATH_CM7
   - SIGNAL_F32_ENABLE
   - SCREEN_USE_ADDT
+  - SWIIC_USE_OPEN_DRAIN
 cxxDefinitions: []
 asDefinitions: []
 
@@ -88,6 +90,7 @@ includeDirectories:
   - Core/Lib/**
   - Drivers/Peripherals/**
   - Drivers/CMSIS/DSP/Include/
+  - SignalNet/Inc/
 
 
 # Files that should be included in the compilation.
@@ -100,6 +103,7 @@ sourceFiles:
   - Core/Src/**
   - Core/Lib/**
   - Drivers/Peripherals/**/*.c
+  - SignalNet/Src/*.c
 
 
 # When no makefile is present it will show a warning pop-up.
