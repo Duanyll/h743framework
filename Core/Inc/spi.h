@@ -1,9 +1,9 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file    tim.h
+  * @file    spi.h
   * @brief   This file contains all the function prototypes for
-  *          the tim.c file
+  *          the spi.c file
   ******************************************************************************
   * @attention
   *
@@ -18,8 +18,8 @@
   */
 /* USER CODE END Header */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __TIM_H__
-#define __TIM_H__
+#ifndef __SPI_H__
+#define __SPI_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,38 +32,24 @@ extern "C" {
 
 /* USER CODE END Includes */
 
-extern TIM_HandleTypeDef htim2;
-
-extern TIM_HandleTypeDef htim3;
-
-extern TIM_HandleTypeDef htim4;
-
-extern TIM_HandleTypeDef htim6;
+extern SPI_HandleTypeDef hspi3;
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
-void MX_TIM2_Init(void);
-void MX_TIM3_Init(void);
-void MX_TIM4_Init(void);
-void MX_TIM6_Init(void);
+void MX_SPI3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void delay_ns(uint32_t ns);
-void delay_us(uint32_t us);
-void delay_ms(uint32_t ms);
-
-void TIM_InitUsTimer();
-int64_t TIM_GetUsTimer();
-void TIM_StopUsTimer();
-
-void TIM_SetTIM6Callback(void (*callback)(void));
+void SPI_StartDMARecieve(uint16_t *buffer, uint16_t totalSize, uint16_t* output);
+void SPI_StopDMARecieve();
+void SPI_RequestOutput();
+uint16_t SPI_GetOutputAtTime();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __TIM_H__ */
+#endif /* __SPI_H__ */
 

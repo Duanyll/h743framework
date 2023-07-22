@@ -7,10 +7,13 @@
 #include "ad9959.h"
 #include "dac8830.h"
 #include "keys.h"
+#include "nn.h"
 #include "screen.h"
 #include "signal.h"
+#include "spi.h"
 #include "usart.h"
-#include "nn.h"
+#include "tim.h"
+#include "dac.h"
 
 UART_HandleTypeDef *computer_uart;
 
@@ -86,23 +89,34 @@ void APP_SetFrequency(uint32_t frequency) {
   AD9959_IOUpdate();
 }
 
-float nn_input[NN_Signet_Input_Samples * NN_Signet_Input_Channels];
-uint8_t nn_buffer[4096];
+uint16_t spi_buffer[2048];
+uint16_t spi_output[1024];
 
-void APP_NNBenchmark() {
-  for (int i = 0; i < NN_Signet_Input_Samples * NN_Signet_Input_Channels; i++) {
-    nn_input[i] = sinf(i * 2 * 3.14159265 / 1000);
+void APP_DACOutCallback() {
+  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
+  int16_t level = SPI_GetOutputAtTime();
+  // HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, level);
+  // HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  DAC8830_SetVoltage(0x01, level * 4);
+}
+
+void APP_SpiTest() {
+  TIM_SetTIM6Callback(APP_DACOutCallback);
+  int dac_sample_rate = 100000;
+  int period = (HAL_RCC_GetPCLK1Freq() * 2) / (TIM6->PSC + 1) / dac_sample_rate - 1;
+  TIM6->ARR = period;
+  SPI_StartDMARecieve(0x24000000, 2048, spi_output);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
+  HAL_TIM_Base_Start_IT(&htim6);
+  for (int i = 1; i <= 100; i++) {
+    SPI_RequestOutput();
+    UART_Printf(computer_uart, "-------------\n");
+    for (int j = 0; j < 1024; j++) {
+      UART_Printf(computer_uart, "%d,\n", spi_output[j]);
+    }
   }
-  NN_SignetInferenceInstance instance;
-  NN_SignetInstance_init(&instance, nn_buffer);
-  float nn_output[NN_Signet_Output_Classes];
-  uint32_t start = HAL_GetTick();
-  for (int i = 0; i < 1000; i++) {
-    NN_Signet_Evaluate(&instance, nn_input, nn_output);
-    HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-  }
-  uint32_t end = HAL_GetTick();
-  UART_Printf(computer_uart, "NN benchmark: %d ms\n", end - start);
+  HAL_TIM_Base_Stop_IT(&htim6);
+  SPI_StopDMARecieve();
 }
 
 void APP_HexCommandCallback(uint8_t *data, int len) {
@@ -113,16 +127,19 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
     uint8_t channels = 0x0f;
     uint32_t sample_count = 128;
     uint32_t sample_rate = 100000;
-    if (len >= 2) channels = data[1];
-    if (len >= 6) sample_count = *(uint32_t *)(data + 2);
-    if (len >= 10) sample_rate = *(uint32_t *)(data + 6);
+    if (len >= 2)
+      channels = data[1];
+    if (len >= 6)
+      sample_count = *(uint32_t *)(data + 2);
+    if (len >= 10)
+      sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
   } else if (*data == '\x02') {
     // 4 byte frequency
     uint32_t frequency = *(uint32_t *)(data + 1);
     APP_SetFrequency(frequency);
   } else if (*data == '\x03') {
-    APP_NNBenchmark();
+    APP_SpiTest();
   }
 }
 

@@ -40,11 +40,13 @@ Core/Src/adc.c \
 Core/Src/app.c \
 Core/Src/cJSON.c \
 Core/Src/dac.c \
+Core/Src/dma.c \
 Core/Src/gpio.c \
 Core/Src/keys.c \
 Core/Src/main.c \
 Core/Src/retarget.c \
 Core/Src/signal.c \
+Core/Src/spi.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/system_stm32h7xx.c \
@@ -80,11 +82,14 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_pwr_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_spi_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
 SignalNet/Src/graph.c \
+SignalNet/Src/lenet_params.c \
 SignalNet/Src/operators.c \
 SignalNet/Src/signet_params.c
 
