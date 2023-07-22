@@ -36,8 +36,10 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Src/adc.c \
 Core/Src/app.c \
 Core/Src/cJSON.c \
+Core/Src/dac.c \
 Core/Src/gpio.c \
 Core/Src/keys.c \
 Core/Src/main.c \
@@ -54,9 +56,16 @@ Drivers/Peripherals/ad9834.c \
 Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
 Drivers/Peripherals/dac8830.c \
+Drivers/Peripherals/pe43711.c \
 Drivers/Peripherals/screen.c \
+Drivers/Peripherals/si5351.c \
+Drivers/Peripherals/swiic.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_cortex.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dac.c \
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dac_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_dma_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_exti.c \
@@ -74,7 +83,10 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_rcc_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
-Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c
+Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
+SignalNet/Src/graph.c \
+SignalNet/Src/operators.c \
+SignalNet/Src/signet_params.c
 
 
 CPP_SOURCES = \
@@ -131,13 +143,15 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DAD7606B_ENABLE \
+-DAD7606C_ENABLE \
 -DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
 -DSCREEN_USE_ADDT \
+-DSI5351_ENABLE \
 -DSIGNAL_F32_ENABLE \
 -DSTM32H743xx \
+-DSWIIC_USE_OPEN_DRAIN \
 -DUSE_HAL_DRIVER
 
 
@@ -158,7 +172,8 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 -IDrivers/Peripherals \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
--IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy
+-IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
+-ISignalNet/Inc/
 
 
 

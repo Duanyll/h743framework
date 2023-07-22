@@ -31,9 +31,9 @@ void DAC8830_SetVoltage(int chip, uint16_t voltage) {
     } else {
       HAL_GPIO_WritePin(DA_SDI_GPIO_Port, DA_SDI_Pin, GPIO_PIN_RESET);
     }
-    HAL_GPIO_WritePin(DA_SCK_GPIO_Port, DA_SCK_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(DA_SCLK_GPIO_Port, DA_SCLK_Pin, GPIO_PIN_RESET);
     DAC8830_Delay();
-    HAL_GPIO_WritePin(DA_SCK_GPIO_Port, DA_SCK_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(DA_SCLK_GPIO_Port, DA_SCLK_Pin, GPIO_PIN_SET);
     DAC8830_Delay();
   }
   HAL_GPIO_WritePin(DA_CS1_GPIO_Port, pin, GPIO_PIN_SET);

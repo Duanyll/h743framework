@@ -27,7 +27,7 @@
 #ifdef DAC8830_ENABLE
 #include "dac8830.h"
 #endif
-#ifdef AD7606B_ENABLE
+#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
 #include "ad7606b.h"
 #endif
 /* USER CODE END 0 */
@@ -224,7 +224,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 #ifdef AD7606_ENABLE
     AD7606_TimerCallback();
 #endif
-#ifdef AD7606B_ENABLE
+#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
     AD7606B_TimerCallback();
 #endif
   } else if (htim->Instance == TIM3) {

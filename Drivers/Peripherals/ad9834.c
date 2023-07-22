@@ -5,7 +5,7 @@
 #define LOW GPIO_PIN_RESET
 #define HIGH GPIO_PIN_SET
 #define WRITE(pin, state) \
-    HAL_GPIO_WritePin(DDS_##pin##_GPIO_Port, DDS_##pin##_Pin, (state))
+    HAL_GPIO_WritePin(AD9834_##pin##_GPIO_Port, AD9834_##pin##_Pin, (state))
 
 // At least 25ns
 void AD9834_Delay() {

@@ -31,7 +31,7 @@ void AD7606_Init(void) {
 
 void AD7606_ApplyConfig(void) {
     // Set parallel mode
-    AD_WRITE(PAR_SET, LOW);
+    AD_WRITE(PAR_SEL, LOW);
 
     // Leave standby mode
     AD_WRITE(STBY, HIGH);

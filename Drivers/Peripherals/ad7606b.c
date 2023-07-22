@@ -1,4 +1,4 @@
-#ifdef AD7606B_ENABLE
+#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
 
 #include "ad7606b.h"
 
@@ -25,9 +25,8 @@ void AD7606B_SetDBInput() {
       .Pin = 0xFFFF, // All pins
       .Mode = GPIO_MODE_INPUT,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_HIGH,
   };
-  HAL_GPIO_Init(AD_DB0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(AD_D0_GPIO_Port, &GPIO_InitStruct);
 }
 
 void AD7606B_SetDBOutput() {
@@ -37,7 +36,7 @@ void AD7606B_SetDBOutput() {
       .Pull = GPIO_NOPULL,
       .Speed = GPIO_SPEED_FREQ_HIGH,
   };
-  HAL_GPIO_Init(AD_DB0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(AD_D0_GPIO_Port, &GPIO_InitStruct);
 }
 
 // delay for at least 40ns
@@ -52,6 +51,9 @@ void AD7606B_Delay() {
   __NOP();
   __NOP();
   __NOP();
+  // for (int i = 0; i < 50; i++) {
+  //   __NOP();
+  // }
 }
 
 void AD7606B_FullReset(void) {
@@ -62,7 +64,7 @@ void AD7606B_FullReset(void) {
 }
 
 void AD7606B_Init(void) {
-  WRITE(PAR_SET, LOW);
+  WRITE(PAR_SEL, LOW);
   WRITE(OS0, HIGH);
   WRITE(OS1, HIGH);
   WRITE(OS2, HIGH);
@@ -94,17 +96,19 @@ static int popcount(uint32_t x) {
 }
 
 uint16_t AD7606B_DataToPins(uint16_t data) {
-  return (bitwise_reverse(data >> 8) << 8) | bitwise_reverse(data & 0xFF);
+  // return (bitwise_reverse(data >> 8) << 8) | bitwise_reverse(data & 0xFF);
+  return data;
 }
 
 uint16_t AD7606B_PinsToData(uint16_t pins) {
-  return (bitwise_reverse(pins >> 8) << 8) | bitwise_reverse(pins & 0xFF);
+  // return (bitwise_reverse(pins >> 8) << 8) | bitwise_reverse(pins & 0xFF);
+  return pins;
 }
 
 uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_DB0_GPIO_Port->ODR = AD7606B_DataToPins((1 << 15) | (addr << 8));
+  AD_D0_GPIO_Port->ODR = AD7606B_DataToPins((1 << 15) | (addr << 8));
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -115,7 +119,7 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBInput();
   WRITE(RD, LOW);
   AD7606B_Delay();
-  uint8_t data = AD7606B_PinsToData(AD_DB0_GPIO_Port->IDR);
+  uint8_t data = AD7606B_PinsToData(AD_D0_GPIO_Port->IDR);
   WRITE(RD, HIGH);
   WRITE(CS, HIGH);
   AD7606B_Delay();
@@ -125,7 +129,7 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
 void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data) {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_DB0_GPIO_Port->ODR = AD7606B_DataToPins((0 << 15) | (addr << 8) | data);
+  AD_D0_GPIO_Port->ODR = AD7606B_DataToPins((0 << 15) | (addr << 8) | data);
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -140,7 +144,7 @@ void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data) {
 void AD7606B_LeaveRegisterMode() {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_DB0_GPIO_Port->ODR = 0;
+  AD_D0_GPIO_Port->ODR = 0;
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -174,7 +178,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
     WRITE(RD, LOW);
     AD7606B_Delay();
     if (channels & (1 << i)) {
-      *data = AD_DB0_GPIO_Port->IDR;
+      *data = AD_D0_GPIO_Port->IDR;
       data++;
     }
     WRITE(RD, HIGH);

@@ -21,7 +21,7 @@ ldscript: STM32H743VITx_FLASH.ld # linker script
 
 # Compiler definitions. The -D prefix for the compiler will be automatically added.
 cDefinitions: 
-  - AD7606B_ENABLE
+  - AD7606C_ENABLE
   - DAC8830_ENABLE
   - AD9959_ENABLE
   - SI5351_ENABLE
