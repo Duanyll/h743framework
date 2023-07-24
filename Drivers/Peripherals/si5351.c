@@ -25,6 +25,7 @@ SOFTWARE.
 #ifdef SI5351_ENABLE
 
 #include "si5351.h"
+#include <stdio.h>
 
 // Private procedures.
 void SI5351_writeBulk(uint8_t baseaddr, int32_t P1, int32_t P2, int32_t P3,
@@ -394,7 +395,10 @@ void SI5351_EnableOutputs(uint8_t enabled) {
 
 // Writes an 8 bit value of a register over I2C.
 void SI5351_write(uint8_t reg, uint8_t value) {
-  SWIIC_WriteBytes8(SI5351_SWIIC, SI5351_ADDR, reg, &value, 1);
+  if (SWIIC_WriteBytes8(SI5351_SWIIC, SI5351_ADDR, reg, &value, 1) !=
+      SWIIC_OK) {
+    printf("fuck\n");
+  }
 }
 
 // Common code for _SetupPLL and _SetupOutput

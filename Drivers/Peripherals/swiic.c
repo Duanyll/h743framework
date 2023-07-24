@@ -1,7 +1,5 @@
 #include "swiic.h"
 
-#include "tim.h"
-
 // Initializes the IIC bus
 void SWIIC_Init(SWIIC_Config *config) {
 #ifdef SWIIC_USE_OPEN_DRAIN
@@ -157,6 +155,7 @@ uint8_t SWIIC_ReadByte(SWIIC_Config *config) {
 // Read bytes from the IIC bus. Register address is 8 bits.
 SWIIC_State SWIIC_ReadBytes8(SWIIC_Config *config, uint8_t addr, uint8_t reg,
                              uint8_t *data, uint8_t count) {
+  SWIIC_Start(config);
   SWIIC_WriteByte(config, addr << 1);
   CHECK_ACK();
   SWIIC_WriteByte(config, reg);
@@ -178,6 +177,7 @@ SWIIC_State SWIIC_ReadBytes8(SWIIC_Config *config, uint8_t addr, uint8_t reg,
 // Read bytes from the IIC bus. Register address is 16 bits.
 SWIIC_State SWIIC_ReadBytes16(SWIIC_Config *config, uint8_t addr, uint16_t reg,
                               uint8_t *data, uint8_t count) {
+  SWIIC_Start(config);
   SWIIC_WriteByte(config, addr << 1);
   CHECK_ACK();
   SWIIC_WriteByte(config, reg >> 8);
@@ -201,6 +201,7 @@ SWIIC_State SWIIC_ReadBytes16(SWIIC_Config *config, uint8_t addr, uint16_t reg,
 // Write bytes to the IIC bus. Register address is 8 bits.
 SWIIC_State SWIIC_WriteBytes8(SWIIC_Config *config, uint8_t addr, uint8_t reg,
                               uint8_t *data, uint8_t count) {
+  SWIIC_Start(config);
   SWIIC_WriteByte(config, addr << 1);
   CHECK_ACK();
   SWIIC_WriteByte(config, reg);
@@ -215,6 +216,7 @@ SWIIC_State SWIIC_WriteBytes8(SWIIC_Config *config, uint8_t addr, uint8_t reg,
 // Write bytes to the IIC bus. Register address is 16 bits.
 SWIIC_State SWIIC_WriteBytes16(SWIIC_Config *config, uint8_t addr, uint16_t reg,
                                uint8_t *data, uint8_t count) {
+  SWIIC_Start(config);
   SWIIC_WriteByte(config, addr << 1);
   CHECK_ACK();
   SWIIC_WriteByte(config, reg >> 8);

@@ -31,7 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -49,6 +50,12 @@ extern "C" {
 #define BOOL uint8_t
 #define TRUE 1
 #define FALSE 0
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CLAMP(x, a, b) MIN(MAX((x), (a)), (b))
+
+#define M_PI 3.14159265358979323846
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

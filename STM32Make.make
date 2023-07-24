@@ -55,6 +55,7 @@ Core/Src/usart.c \
 Drivers/Peripherals/ad7606.c \
 Drivers/Peripherals/ad7606b.c \
 Drivers/Peripherals/ad9834.c \
+Drivers/Peripherals/ad9910.c \
 Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
 Drivers/Peripherals/dac8830.c \
@@ -149,6 +150,7 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DAD7606C_ENABLE \
+-DAD9910_ENABLE \
 -DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
@@ -217,7 +219,7 @@ LIBDIR = \
 
 
 # Additional LD Flags from config file
-ADDITIONALLDFLAGS = -specs=nano.specs -u _printf_float 
+ADDITIONALLDFLAGS = -u _printf_float 
 
 LDFLAGS = $(MCU) $(ADDITIONALLDFLAGS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 

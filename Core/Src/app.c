@@ -6,6 +6,8 @@
 #include "ad7606b.h"
 #include "ad9959.h"
 #include "dac8830.h"
+#include "si5351.h"
+#include "ad9910.h"
 #include "keys.h"
 #include "nn.h"
 #include "screen.h"
@@ -59,6 +61,54 @@ void APP_InitAD7606B() {
   // UART_Printf(computer_uart, "AD7606B version: %d\n", ad_version);
 
   AD7606B_LeaveRegisterMode();
+}
+
+SWIIC_Config si5351_swiic;
+void APP_InitSI5351() {
+  si5351_swiic.delay = 100;
+  si5351_swiic.SCL_Port = GPIOC;
+  si5351_swiic.SCL_Pin = GPIO_PIN_13;
+  si5351_swiic.SDA_Port = GPIOC;
+  si5351_swiic.SDA_Pin = GPIO_PIN_14;
+  SWIIC_Init(&si5351_swiic);
+  SI5351_Init(&si5351_swiic, 0);
+  SI5351_SetupCLK0((76 + 48) * 1000000, SI5351_DRIVE_STRENGTH_2MA);
+  SI5351_SetupCLK2(100000000, SI5351_DRIVE_STRENGTH_8MA);
+  SI5351_EnableOutputs(0x05);
+}
+
+AD9910_Pins ad9910_pins;
+AD9910_Config ad9910_config;
+void APP_InitAD9910() {
+  // SDIO -> B12
+  // IOUP -> B11
+  // PF0 -> B10
+  // PF1 -> B9
+  // PF2 -> B8
+  // RST -> B7
+  // SCK -> B6
+  // CSB -> B5
+  ad9910_pins.SDIO_Port = GPIOB;
+  ad9910_pins.SDIO_Pin = GPIO_PIN_12;
+  ad9910_pins.IOUP_Port = GPIOB;
+  ad9910_pins.IOUP_Pin = GPIO_PIN_11;
+  ad9910_pins.PF0_Port = GPIOB;
+  ad9910_pins.PF0_Pin = GPIO_PIN_10;
+  ad9910_pins.PF1_Port = GPIOB;
+  ad9910_pins.PF1_Pin = GPIO_PIN_9;
+  ad9910_pins.PF2_Port = GPIOB;
+  ad9910_pins.PF2_Pin = GPIO_PIN_8;
+  ad9910_pins.RST_Port = GPIOB;
+  ad9910_pins.RST_Pin = GPIO_PIN_7;
+  ad9910_pins.SCK_Port = GPIOB;
+  ad9910_pins.SCK_Pin = GPIO_PIN_6;
+  ad9910_pins.CSB_Port = GPIOB;
+  ad9910_pins.CSB_Pin = GPIO_PIN_5;
+  UART_Printf(computer_uart, "------------\n");
+  AD9910_Init(&ad9910_pins);
+  AD9910_InitConfig(&ad9910_config);
+  AD9910_SetupClock(&ad9910_config);
+  AD9910_SetupSingleTone(&ad9910_config, 50e6, 0, AD9910_MAX_AMP);
 }
 
 #define AD_SAMPLE_COUNT 2048
@@ -146,8 +196,10 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
 void APP_Init() {
   computer_uart = &huart6;
   UART_ResetHexRX(computer_uart);
-  APP_InitAD9959();
-  APP_InitAD7606B();
+  // APP_InitAD9959();
+  // APP_InitAD7606B();
+  // APP_InitSI5351();
+  APP_InitAD9910();
   DAC8830_Init();
 }
 
