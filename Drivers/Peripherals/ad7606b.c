@@ -6,10 +6,12 @@
 
 #include "tim.h"
 
+static AD7606B_Pins *pins;
+
 #define LOW GPIO_PIN_RESET
 #define HIGH GPIO_PIN_SET
 #define WRITE(pin, value)                                                      \
-  HAL_GPIO_WritePin(AD_##pin##_GPIO_Port, AD_##pin##_Pin, (value) ? HIGH : LOW)
+  HAL_GPIO_WritePin(pins->pin##_Port, pins->##pin##_Pin, (value) ? HIGH : LOW)
 
 volatile BOOL AD7606B_isSampling;
 volatile BOOL AD7606B_badSampleFlag;
@@ -26,7 +28,7 @@ void AD7606B_SetDBInput() {
       .Mode = GPIO_MODE_INPUT,
       .Pull = GPIO_NOPULL,
   };
-  HAL_GPIO_Init(AD_D0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 }
 
 void AD7606B_SetDBOutput() {
@@ -36,7 +38,7 @@ void AD7606B_SetDBOutput() {
       .Pull = GPIO_NOPULL,
       .Speed = GPIO_SPEED_FREQ_HIGH,
   };
-  HAL_GPIO_Init(AD_D0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 }
 
 // delay for at least 40ns
@@ -63,7 +65,32 @@ void AD7606B_FullReset(void) {
   delay_us(300);
 }
 
-void AD7606B_Init(void) {
+void AD7606B_Init(AD7606B_Pins *p) {
+  pins = p;
+
+  GPIO_InitTypeDef GPIO_InitStruct = {
+      .Mode = GPIO_MODE_OUTPUT_PP,
+      .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
+  };
+#define INIT(pin)                                                              \
+  GPIO_InitStruct.Pin = pins->pin##_Pin;                                       \
+  HAL_GPIO_Init(pins->pin##_Port, &GPIO_InitStruct)
+
+  INIT(CS);
+  INIT(RD);
+  INIT(RESET);
+  INIT(CONVST);
+  INIT(WR);
+  INIT(OS0);
+  INIT(OS1);
+  INIT(OS2);
+  INIT(PAR_SEL);
+
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  INIT(BUSY);
+#undef INIT
+
   WRITE(PAR_SEL, LOW);
   WRITE(OS0, HIGH);
   WRITE(OS1, HIGH);
@@ -95,20 +122,10 @@ static int popcount(uint32_t x) {
   return count;
 }
 
-uint16_t AD7606B_DataToPins(uint16_t data) {
-  // return (bitwise_reverse(data >> 8) << 8) | bitwise_reverse(data & 0xFF);
-  return data;
-}
-
-uint16_t AD7606B_PinsToData(uint16_t pins) {
-  // return (bitwise_reverse(pins >> 8) << 8) | bitwise_reverse(pins & 0xFF);
-  return pins;
-}
-
 uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_D0_GPIO_Port->ODR = AD7606B_DataToPins((1 << 15) | (addr << 8));
+  pins->DB_Port->ODR = pins->DataToPins((1 << 15) | (addr << 8));
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -119,7 +136,7 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBInput();
   WRITE(RD, LOW);
   AD7606B_Delay();
-  uint8_t data = AD7606B_PinsToData(AD_D0_GPIO_Port->IDR);
+  uint8_t data = AD7606B_PinsToData(pins->DB_Port->IDR);
   WRITE(RD, HIGH);
   WRITE(CS, HIGH);
   AD7606B_Delay();
@@ -129,7 +146,7 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
 void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data) {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_D0_GPIO_Port->ODR = AD7606B_DataToPins((0 << 15) | (addr << 8) | data);
+  pins->DB_Port->ODR = pins->DataToPins((0 << 15) | (addr << 8) | data);
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -144,7 +161,7 @@ void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data) {
 void AD7606B_LeaveRegisterMode() {
   AD7606B_SetDBOutput();
   WRITE(CS, LOW);
-  AD_D0_GPIO_Port->ODR = 0;
+  pins->DB_Port->ODR = 0;
   WRITE(WR, LOW);
   AD7606B_Delay();
   AD7606B_Delay();
@@ -167,7 +184,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
   if (AD7606B_SampleCallback != NULL) {
     int16_t *lastSample = (int16_t *)AD7606B_lastSample;
     for (int i = 0; i < AD7606B_channelCount; i++) {
-      lastSample[i] = AD7606B_PinsToData(AD7606B_lastSample[i]);
+      lastSample[i] = pins->PinsToData(AD7606B_lastSample[i]);
     }
     AD7606B_SampleCallback(lastSample);
   }
@@ -178,7 +195,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
     WRITE(RD, LOW);
     AD7606B_Delay();
     if (channels & (1 << i)) {
-      *data = AD_D0_GPIO_Port->IDR;
+      *data = pins->DB_Port->IDR;
       data++;
     }
     WRITE(RD, HIGH);
@@ -218,7 +235,7 @@ BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
   HAL_TIM_Base_Stop_IT(&htim2);
   int sampleCount = count * popcount(channels);
   for (int i = 0; i < sampleCount; i++) {
-    data[i] = (int16_t)AD7606B_PinsToData(data[i]);
+    data[i] = (int16_t)pins->PinsToData(data[i]);
   }
   return TRUE;
 }
@@ -252,8 +269,7 @@ void AD7606B_TimerCallback() {
     AD7606B_sampleCount--;
   } else if (AD7606B_sampleCount == 0) {
     HAL_TIM_Base_Stop_IT(&htim2);
-  }
-  else if (AD7606B_sampleCount == -1) {
+  } else if (AD7606B_sampleCount == -1) {
     AD7606B_ADCConvert(AD7606B_lastSample, AD7606B_channels);
   }
 }

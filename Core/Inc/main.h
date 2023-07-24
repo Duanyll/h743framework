@@ -56,6 +56,9 @@ extern "C" {
 #define CLAMP(x, a, b) MIN(MAX((x), (a)), (b))
 
 #define M_PI 3.14159265358979323846
+
+#define HIGH GPIO_PIN_SET
+#define LOW GPIO_PIN_RESET
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/

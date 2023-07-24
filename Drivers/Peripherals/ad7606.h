@@ -30,6 +30,38 @@
 // 6. Call AD7606_CollectSamples() to collect samples synchronously at given
 // sample rate.
 
+typedef uint16_t(AD7606_DataConvertFunction)(uint16_t data);
+
+typedef struct {
+  GPIO_TypeDef *PAR_SEL_Port;
+  uint16_t PAR_SEL_Pin;
+  GPIO_TypeDef *STBY_Port;
+  uint16_t STBY_Pin;
+  GPIO_TypeDef *RANGE_Port;
+  uint16_t RANGE_Pin;
+  GPIO_TypeDef *OS0_Port;
+  uint16_t OS0_Pin;
+  GPIO_TypeDef *OS1_Port;
+  uint16_t OS1_Pin;
+  GPIO_TypeDef *OS2_Port;
+  uint16_t OS2_Pin;
+  GPIO_TypeDef *CONVSTA_Port;
+  uint16_t CONVSTA_Pin;
+  GPIO_TypeDef *CONVSTB_Port;
+  uint16_t CONVSTB_Pin;
+  GPIO_TypeDef *RD_Port;
+  uint16_t RD_Pin;
+  GPIO_TypeDef *CS_Port;
+  uint16_t CS_Pin;
+  GPIO_TypeDef *BUSY_Port;
+  uint16_t BUSY_Pin;
+  GPIO_TypeDef *RESET_Port;
+  uint16_t RESET_Pin;
+
+  GPIO_TypeDef *DB_Port;
+  AD7606_DataConvertFunction *PinsToData;
+} AD7606_Pins;
+
 #define AD_RANGE_10V 1
 #define AD_RANGE_5V 0
 
@@ -42,14 +74,14 @@
 #define AD_OVERSAMPLE_64X 6
 
 typedef struct AD7606_Config {
-    uint32_t range;       // AD_RANGE_10V or AD_RANGE_5V
-    uint32_t oversample;  // See AD_OVERSAMPLE_*
-    uint32_t channels;  // Bit mask of enabled channels. 0x1 = channel 1, 0x2 =
-                        // channel 2, etc. There are 8 channels.
+  uint32_t range;      // AD_RANGE_10V or AD_RANGE_5V
+  uint32_t oversample; // See AD_OVERSAMPLE_*
+  uint32_t channels;   // Bit mask of enabled channels. 0x1 = channel 1, 0x2 =
+                       // channel 2, etc. There are 8 channels.
 } AD7606_Config;
 
 // Initialize the AD7606 driver.
-void AD7606_Init(void);
+void AD7606_Init(AD7606_Pins *pins);
 // Apply the current configuration to the AD7606.
 void AD7606_ApplyConfig(void);
 // Reset the AD7606
@@ -59,8 +91,6 @@ void AD7606_Reset(void);
 int AD7606_SetConfig(AD7606_Config *config);
 // Take one sample from AD7606. Only save enabled channels.
 
-// Convert the raw data from AD7606 to signed 16-bit integer.
-int16_t AD7606_ConvertData(uint16_t data);
 // Sample one sample from the AD7606 synchronously. Use AD7606_ConvertData() to
 // get real data.
 void AD7606_Sample(uint16_t *output);

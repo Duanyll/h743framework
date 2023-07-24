@@ -33,24 +33,36 @@
 // 6. To take multiple samples at specified sample rate, call
 // AD7606B_CollectSamples().
 
-// AD7606 Pins
-#ifdef AD_CONVSTA_Pin
-#ifndef AD_CONVST_GPIO_Port
-#define AD_CONVST_GPIO_Port AD_CONVSTA_GPIO_Port
-#endif
-#ifndef AD_CONVST_Pin
-#define AD_CONVST_Pin AD_CONVSTA_Pin
-#endif
-#endif
+typedef uint16_t (AD7606B_DataConvertFunction)(uint16_t data);
 
-#ifdef AD_CONVSTB_Pin
-#ifndef AD_WR_GPIO_Port
-#define AD_WR_GPIO_Port AD_CONVSTB_GPIO_Port
-#endif
-#ifndef AD_WR_Pin
-#define AD_WR_Pin AD_CONVSTB_Pin
-#endif
-#endif
+typedef struct {
+  GPIO_TypeDef *CS_Port;
+  uint16_t CS_Pin;
+  GPIO_TypeDef *RD_Port;
+  uint16_t RD_Pin;
+  GPIO_TypeDef *BUSY_Port;
+  uint16_t BUSY_Pin;
+  GPIO_TypeDef *RESET_Port;
+  uint16_t RESET_Pin;
+  GPIO_TypeDef *CONVST_Port;
+  uint16_t CONVST_Pin;
+  GPIO_TypeDef *WR_Port;
+  uint16_t WR_Pin;
+
+  GPIO_TypeDef *DB_Port; // Whole port
+  AD7606B_DataConvertFunction *DataToPins;
+  AD7606B_DataConvertFunction *PinsToData;
+
+  // Optional
+  GPIO_TypeDef *OS0_Port;
+  uint16_t OS0_Pin;
+  GPIO_TypeDef *OS1_Port;
+  uint16_t OS1_Pin;
+  GPIO_TypeDef *OS2_Port;
+  uint16_t OS2_Pin;
+  GPIO_TypeDef *PAR_SEL_Port;
+  uint16_t PAR_SEL_Pin;
+} AD7606B_Pins;
 
 #define AD7606B_REG_STATUS 0x01
 #define AD7606B_REG_CONFIG 0x02
@@ -123,13 +135,9 @@ typedef struct {
 } AD7606B_Config;
 
 // Init the AD7606B
-void AD7606B_Init(void);
+void AD7606B_Init(AD7606B_Pins *p);
 // Full reset the AD7606B
 void AD7606B_FullReset(void);
-// Convert 16-bit data to 16-bit GPIO pins
-uint16_t AD7606B_DataToPins(uint16_t data);
-// Convert 16-bit GPIO pins to 16-bit data
-uint16_t AD7606B_PinsToData(uint16_t pins);
 // Read from a single register
 uint8_t AD7606B_ParallelRegisterRead(uint8_t addr);
 // Write to a single register

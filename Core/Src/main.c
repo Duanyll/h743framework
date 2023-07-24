@@ -130,8 +130,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     APP_Loop();
-    // printf("fuck\n");
-    // HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
   }
   /* USER CODE END 3 */
 }

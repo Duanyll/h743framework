@@ -17,10 +17,19 @@
 // 3. To start a sine wave asynchronically, call DAC8830_StartSineWave(), and
 // stop generating by calling DAC8830_StopSineWave().
 
-void DAC8830_Init(void);
-void DAC8830_SetVoltage(int chip, uint16_t voltage);
+typedef struct {
+  GPIO_TypeDef *CS_Port;
+  uint16_t CS_Pin;
+  GPIO_TypeDef *SCK_Port;
+  uint16_t SCK_Pin;
+  GPIO_TypeDef *SDI_Port;
+  uint16_t SDI_Pin;
+} DAC8830_Pins;
 
-void DAC8830_StartSineWave(int chip, int frequency, int amplitude);
+void DAC8830_Init(DAC8830_Pins *pins);
+void DAC8830_SetVoltage(DAC8830_Pins *pins, uint16_t voltage);
+
+void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude);
 void DAC8830_StopSineWave();
 void DAC8830_TimerCallback();
 

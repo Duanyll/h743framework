@@ -6,8 +6,24 @@
 
 #include "tim.h"
 
-void DAC8830_Init(void) {
-  HAL_GPIO_WritePin(DA_CS1_GPIO_Port, DA_CS1_Pin | DA_CS2_Pin, GPIO_PIN_SET);
+#define WRITE(pin, value)                                                      \
+  HAL_GPIO_WritePin(pins->pin##_Port, pins->pin##_Pin, value)
+
+void DAC8830_Init(DAC8830_Pins *pins) {
+  GPIO_InitTypeDef GPIO_InitStruct = {
+      .Mode = GPIO_MODE_OUTPUT_PP,
+      .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
+  };
+  GPIO_InitStruct.Pin = pins->CS_Pin;
+  HAL_GPIO_Init(pins->CS_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = pins->SCK_Pin;
+  HAL_GPIO_Init(pins->SCK_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Pin = pins->SDI_Pin;
+  HAL_GPIO_Init(pins->SDI_Port, &GPIO_InitStruct);
+  WRITE(CS, HIGH);
+  WRITE(SCK, LOW);
+  WRITE(SDI, LOW);
 }
 
 void DAC8830_Delay() {
@@ -21,22 +37,20 @@ void DAC8830_Delay() {
   __NOP();
 }
 
-void DAC8830_SetVoltage(int chip, uint16_t voltage) {
-  uint16_t pin =
-      ((chip & 0x1) ? DA_CS1_Pin : 0) | ((chip & 0x2) ? DA_CS2_Pin : 0);
-  HAL_GPIO_WritePin(DA_CS1_GPIO_Port, pin, GPIO_PIN_RESET);
+void DAC8830_SetVoltage(DAC8830_Pins *pins, uint16_t voltage) {
+  WRITE(CS, LOW);
   for (int i = 15; i >= 0; i--) {
     if (voltage & (1 << i)) {
-      HAL_GPIO_WritePin(DA_SDI_GPIO_Port, DA_SDI_Pin, GPIO_PIN_SET);
+      WRITE(SDI, HIGH);
     } else {
-      HAL_GPIO_WritePin(DA_SDI_GPIO_Port, DA_SDI_Pin, GPIO_PIN_RESET);
+      WRITE(SDI, LOW);
     }
-    HAL_GPIO_WritePin(DA_SCLK_GPIO_Port, DA_SCLK_Pin, GPIO_PIN_RESET);
+    WRITE(SCK, LOW);
     DAC8830_Delay();
-    HAL_GPIO_WritePin(DA_SCLK_GPIO_Port, DA_SCLK_Pin, GPIO_PIN_SET);
+    WRITE(SCK, HIGH);
     DAC8830_Delay();
   }
-  HAL_GPIO_WritePin(DA_CS1_GPIO_Port, pin, GPIO_PIN_SET);
+  WRITE(CS, HIGH);
   DAC8830_Delay();
 }
 
@@ -56,14 +70,14 @@ const uint16_t sine_wave[128] = {
     21728, 23255, 24805, 26374, 27959, 29555, 31159,
 };
 
-int sine_wave_chip; // 0x0 = disabled, 0x1 = enabled chip 1, 0x2 =
-                    // enabled chip 2, 0x3 = enabled both chips
+DAC8830_Pins *sine_wave_chip; // 0x0 = disabled, 0x1 = enabled chip 1, 0x2 =
+                              // enabled chip 2, 0x3 = enabled both chips
 int sine_wave_index;
 int sine_wave_step;
 int sine_wave_amplitude;
 
-void DAC8830_StartSineWave(int chip, int frequency, int amplitude) {
-  sine_wave_chip = chip;
+void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude) {
+  sine_wave_chip = pins;
   sine_wave_index = 0;
   sine_wave_amplitude = amplitude;
   if (frequency > 10000) {
@@ -77,7 +91,6 @@ void DAC8830_StartSineWave(int chip, int frequency, int amplitude) {
   }
   int base_freq = HAL_RCC_GetPCLK1Freq() / (TIM3->PSC + 1);
   int period = base_freq / (frequency * SAMPLES_PER_PERIOD / sine_wave_step);
-  printf("DAC8830_StartSineWave: base_freq=%d, period=%d\n", base_freq, period);
   __HAL_TIM_SET_AUTORELOAD(&htim3, period - 1);
   HAL_TIM_Base_Start_IT(&htim3);
 }
