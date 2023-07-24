@@ -21,15 +21,7 @@
 #include "tim.h"
 
 /* USER CODE BEGIN 0 */
-#ifdef AD7606_ENABLE
-#include "ad7606.h"
-#endif
-#ifdef DAC8830_ENABLE
-#include "dac8830.h"
-#endif
-#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
-#include "ad7606b.h"
-#endif
+
 /* USER CODE END 0 */
 
 TIM_HandleTypeDef htim2;
@@ -38,8 +30,7 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim6;
 
 /* TIM2 init function */
-void MX_TIM2_Init(void)
-{
+void MX_TIM2_Init(void) {
 
   /* USER CODE BEGIN TIM2_Init 0 */
 
@@ -57,29 +48,24 @@ void MX_TIM2_Init(void)
   htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-
 }
 /* TIM3 init function */
-void MX_TIM3_Init(void)
-{
+void MX_TIM3_Init(void) {
 
   /* USER CODE BEGIN TIM3_Init 0 */
 
@@ -97,29 +83,24 @@ void MX_TIM3_Init(void)
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK) {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
-  {
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
-
 }
 /* TIM4 init function */
-void MX_TIM4_Init(void)
-{
+void MX_TIM4_Init(void) {
 
   /* USER CODE BEGIN TIM4_Init 0 */
 
@@ -137,29 +118,24 @@ void MX_TIM4_Init(void)
   htim4.Init.Period = 4999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK) {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
-  {
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM4_Init 2 */
 
   /* USER CODE END TIM4_Init 2 */
-
 }
 /* TIM6 init function */
-void MX_TIM6_Init(void)
-{
+void MX_TIM6_Init(void) {
 
   /* USER CODE BEGIN TIM6_Init 0 */
 
@@ -175,164 +151,139 @@ void MX_TIM6_Init(void)
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim6.Init.Period = 65535;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
-  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
-  {
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK) {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
-  {
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK) {
     Error_Handler();
   }
   /* USER CODE BEGIN TIM6_Init 2 */
 
   /* USER CODE END TIM6_Init 2 */
-
 }
 
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* tim_baseHandle)
-{
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle) {
 
-  if(tim_baseHandle->Instance==TIM2)
-  {
-  /* USER CODE BEGIN TIM2_MspInit 0 */
+  if (tim_baseHandle->Instance == TIM2) {
+    /* USER CODE BEGIN TIM2_MspInit 0 */
 
-  /* USER CODE END TIM2_MspInit 0 */
+    /* USER CODE END TIM2_MspInit 0 */
     /* TIM2 clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
 
     /* TIM2 interrupt Init */
     HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
-  /* USER CODE BEGIN TIM2_MspInit 1 */
+    /* USER CODE BEGIN TIM2_MspInit 1 */
 
-  /* USER CODE END TIM2_MspInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM3)
-  {
-  /* USER CODE BEGIN TIM3_MspInit 0 */
+    /* USER CODE END TIM2_MspInit 1 */
+  } else if (tim_baseHandle->Instance == TIM3) {
+    /* USER CODE BEGIN TIM3_MspInit 0 */
 
-  /* USER CODE END TIM3_MspInit 0 */
+    /* USER CODE END TIM3_MspInit 0 */
     /* TIM3 clock enable */
     __HAL_RCC_TIM3_CLK_ENABLE();
 
     /* TIM3 interrupt Init */
     HAL_NVIC_SetPriority(TIM3_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM3_IRQn);
-  /* USER CODE BEGIN TIM3_MspInit 1 */
+    /* USER CODE BEGIN TIM3_MspInit 1 */
 
-  /* USER CODE END TIM3_MspInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM4)
-  {
-  /* USER CODE BEGIN TIM4_MspInit 0 */
+    /* USER CODE END TIM3_MspInit 1 */
+  } else if (tim_baseHandle->Instance == TIM4) {
+    /* USER CODE BEGIN TIM4_MspInit 0 */
 
-  /* USER CODE END TIM4_MspInit 0 */
+    /* USER CODE END TIM4_MspInit 0 */
     /* TIM4 clock enable */
     __HAL_RCC_TIM4_CLK_ENABLE();
 
     /* TIM4 interrupt Init */
     HAL_NVIC_SetPriority(TIM4_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM4_IRQn);
-  /* USER CODE BEGIN TIM4_MspInit 1 */
+    /* USER CODE BEGIN TIM4_MspInit 1 */
 
-  /* USER CODE END TIM4_MspInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM6)
-  {
-  /* USER CODE BEGIN TIM6_MspInit 0 */
+    /* USER CODE END TIM4_MspInit 1 */
+  } else if (tim_baseHandle->Instance == TIM6) {
+    /* USER CODE BEGIN TIM6_MspInit 0 */
 
-  /* USER CODE END TIM6_MspInit 0 */
+    /* USER CODE END TIM6_MspInit 0 */
     /* TIM6 clock enable */
     __HAL_RCC_TIM6_CLK_ENABLE();
 
     /* TIM6 interrupt Init */
     HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);
-  /* USER CODE BEGIN TIM6_MspInit 1 */
+    /* USER CODE BEGIN TIM6_MspInit 1 */
 
-  /* USER CODE END TIM6_MspInit 1 */
+    /* USER CODE END TIM6_MspInit 1 */
   }
 }
 
-void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* tim_baseHandle)
-{
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *tim_baseHandle) {
 
-  if(tim_baseHandle->Instance==TIM2)
-  {
-  /* USER CODE BEGIN TIM2_MspDeInit 0 */
+  if (tim_baseHandle->Instance == TIM2) {
+    /* USER CODE BEGIN TIM2_MspDeInit 0 */
 
-  /* USER CODE END TIM2_MspDeInit 0 */
+    /* USER CODE END TIM2_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM2_CLK_DISABLE();
 
     /* TIM2 interrupt Deinit */
     HAL_NVIC_DisableIRQ(TIM2_IRQn);
-  /* USER CODE BEGIN TIM2_MspDeInit 1 */
+    /* USER CODE BEGIN TIM2_MspDeInit 1 */
 
-  /* USER CODE END TIM2_MspDeInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM3)
-  {
-  /* USER CODE BEGIN TIM3_MspDeInit 0 */
+    /* USER CODE END TIM2_MspDeInit 1 */
+  } else if (tim_baseHandle->Instance == TIM3) {
+    /* USER CODE BEGIN TIM3_MspDeInit 0 */
 
-  /* USER CODE END TIM3_MspDeInit 0 */
+    /* USER CODE END TIM3_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM3_CLK_DISABLE();
 
     /* TIM3 interrupt Deinit */
     HAL_NVIC_DisableIRQ(TIM3_IRQn);
-  /* USER CODE BEGIN TIM3_MspDeInit 1 */
+    /* USER CODE BEGIN TIM3_MspDeInit 1 */
 
-  /* USER CODE END TIM3_MspDeInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM4)
-  {
-  /* USER CODE BEGIN TIM4_MspDeInit 0 */
+    /* USER CODE END TIM3_MspDeInit 1 */
+  } else if (tim_baseHandle->Instance == TIM4) {
+    /* USER CODE BEGIN TIM4_MspDeInit 0 */
 
-  /* USER CODE END TIM4_MspDeInit 0 */
+    /* USER CODE END TIM4_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM4_CLK_DISABLE();
 
     /* TIM4 interrupt Deinit */
     HAL_NVIC_DisableIRQ(TIM4_IRQn);
-  /* USER CODE BEGIN TIM4_MspDeInit 1 */
+    /* USER CODE BEGIN TIM4_MspDeInit 1 */
 
-  /* USER CODE END TIM4_MspDeInit 1 */
-  }
-  else if(tim_baseHandle->Instance==TIM6)
-  {
-  /* USER CODE BEGIN TIM6_MspDeInit 0 */
+    /* USER CODE END TIM4_MspDeInit 1 */
+  } else if (tim_baseHandle->Instance == TIM6) {
+    /* USER CODE BEGIN TIM6_MspDeInit 0 */
 
-  /* USER CODE END TIM6_MspDeInit 0 */
+    /* USER CODE END TIM6_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM6_CLK_DISABLE();
 
     /* TIM6 interrupt Deinit */
-  /* USER CODE BEGIN TIM6:TIM6_DAC_IRQn disable */
+    /* USER CODE BEGIN TIM6:TIM6_DAC_IRQn disable */
     /**
-    * Uncomment the line below to disable the "TIM6_DAC_IRQn" interrupt
-    * Be aware, disabling shared interrupt may affect other IPs
-    */
+     * Uncomment the line below to disable the "TIM6_DAC_IRQn" interrupt
+     * Be aware, disabling shared interrupt may affect other IPs
+     */
     /* HAL_NVIC_DisableIRQ(TIM6_DAC_IRQn); */
-  /* USER CODE END TIM6:TIM6_DAC_IRQn disable */
+    /* USER CODE END TIM6:TIM6_DAC_IRQn disable */
 
-  /* USER CODE BEGIN TIM6_MspDeInit 1 */
+    /* USER CODE BEGIN TIM6_MspDeInit 1 */
 
-  /* USER CODE END TIM6_MspDeInit 1 */
+    /* USER CODE END TIM6_MspDeInit 1 */
   }
 }
 
 /* USER CODE BEGIN 1 */
-void delay_ns(uint32_t ns) {
-  // ns /= 2;
-  for (uint32_t i = 0; i < ns; i++) {
-    __NOP();
-  }
-}
 
-void delay_us(uint32_t us) {
+void TIM_DelayUs(uint32_t us) {
   // Delay in microseconds using SysTick
   __IO uint32_t currentTicks = SysTick->VAL;
   /* Number of ticks per millisecond */
@@ -351,50 +302,63 @@ void delay_us(uint32_t us) {
   } while (nbTicks > elapsedTicks);
 }
 
-void delay_ms(uint32_t ms) {
-  // Delay in milliseconds using HAL_GetTick
-  uint32_t start = HAL_GetTick();
-  while (HAL_GetTick() - start < ms) {
-    // Wait until the timer reaches the desired delay
-  }
-}
+#define FOR_ALL_TIMERS(_)                                                      \
+  _(TIM2)                                                                      \
+  _(TIM3)                                                                      \
+  _(TIM4)                                                                      \
+  _(TIM6)
 
-void (*TIM6_Callback)(void);
-
-volatile int64_t TIM_usTimer;
+#define DEFINE_TIM_CALLBACK(tim) TIM_Callback tim##_Callback;
+FOR_ALL_TIMERS(DEFINE_TIM_CALLBACK);
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-  if (htim->Instance == TIM2) {
-#ifdef AD7606_ENABLE
-    AD7606_TimerCallback();
-#endif
-#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
-    AD7606B_TimerCallback();
-#endif
-  } else if (htim->Instance == TIM3) {
-#ifdef DAC8830_ENABLE
-    DAC8830_TimerCallback();
-#endif
-  } else if (htim->Instance == TIM4) {
-    TIM_usTimer += TIM4->ARR + 1;
-  } else if (htim->Instance == TIM6) {
-    if (TIM6_Callback != NULL) {
-      TIM6_Callback();
-    }
+#define CALL_IF_MATCH(tim)                                                     \
+  if (htim->Instance == tim) {                                                 \
+    if (tim##_Callback) {                                                      \
+      tim##_Callback();                                                        \
+    }                                                                          \
   }
+  FOR_ALL_TIMERS(CALL_IF_MATCH);
 }
 
-void TIM_InitUsTimer() {
+volatile int64_t TIM_usTimer;
+TIM_HandleTypeDef *TIM_usTimerHandle;
+
+void TIM_StartUsTimer(TIM_HandleTypeDef *htim) {
   TIM_usTimer = 0;
-  // Configure TIM4 for 1 us timer
+  TIM_usTimerHandle = htim;
   int prescaler = (HAL_RCC_GetPCLK1Freq() * 2 / 1000000) - 1;
-  __HAL_TIM_SET_PRESCALER(&htim4, prescaler);
-  HAL_TIM_Base_Start_IT(&htim4);
+  __HAL_TIM_SET_PRESCALER(htim, prescaler);
+  __HAL_TIM_SET_AUTORELOAD(htim, 4999);
+  HAL_TIM_Base_Start_IT(htim);
 }
-int64_t TIM_GetUsTimer() { return TIM_usTimer + TIM4->ARR + 1 - TIM4->CNT; }
-void TIM_StopUsTimer() { HAL_TIM_Base_Stop_IT(&htim4); }
+int64_t TIM_GetUsTimer() {
+  return TIM_usTimer + TIM_usTimerHandle->Instance->ARR + 1 -
+         TIM_usTimerHandle->Instance->CNT;
+}
+void TIM_StopUsTimer() { HAL_TIM_Base_Stop_IT(TIM_usTimerHandle); }
 
-void TIM_SetTIM6Callback(void (*callback)(void)) {
-  TIM6_Callback = callback;
+void TIM_RegisterCallback(TIM_HandleTypeDef *htim, TIM_Callback callback) {
+#define SET_CALLBACK_IF_MATCH(tim)                                             \
+  if (htim->Instance == tim) {                                                 \
+    tim##_Callback = callback;                                                 \
+  }
+  FOR_ALL_TIMERS(SET_CALLBACK_IF_MATCH);
 }
+void TIM_UnregisterCallback(TIM_HandleTypeDef *htim) {
+#define CLEAR_CALLBACK_IF_MATCH(tim)                                           \
+  if (htim->Instance == tim) {                                                 \
+    tim##_Callback = NULL;                                                     \
+  }
+  FOR_ALL_TIMERS(CLEAR_CALLBACK_IF_MATCH);
+}
+void TIM_StartPeriodic(TIM_HandleTypeDef *htim, double sampleRate) {
+  int period =
+      HAL_RCC_GetPCLK1Freq() * 2 / (htim->Instance->PSC + 1) / sampleRate - 1;
+  __HAL_TIM_SET_AUTORELOAD(htim, period);
+  __HAL_TIM_SET_COUNTER(htim, 0);
+  HAL_TIM_Base_Start_IT(htim);
+}
+void TIM_StopPeriodic(TIM_HandleTypeDef *htim) { HAL_TIM_Base_Stop_IT(htim); }
+
 /* USER CODE END 1 */

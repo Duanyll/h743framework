@@ -62,6 +62,8 @@ typedef struct {
   uint16_t OS2_Pin;
   GPIO_TypeDef *PAR_SEL_Port;
   uint16_t PAR_SEL_Pin;
+
+  TIM_HandleTypeDef *TIM_Handle;
 } AD7606B_Pins;
 
 #define AD7606B_REG_STATUS 0x01
@@ -158,7 +160,6 @@ void AD7606B_StartContinuousConvert(double sampleRate, uint8_t channels,
                                     void (*callback)(int16_t *data));
 // Stop continuous convert mode
 void AD7606B_StopContinuousConvert(void);
-void AD7606B_TimerCallback();
 
 void AD7606B_InitConfig(AD7606B_Config *config);
 void AD7606B_SetRange(AD7606B_Config *config, uint8_t channel, uint8_t range);

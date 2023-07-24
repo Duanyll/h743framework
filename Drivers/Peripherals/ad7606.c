@@ -61,6 +61,12 @@ void AD7606_Init(AD7606_Pins *p) {
   AD7606_Reset();
 }
 
+void AD7606_Delay(int delay) {
+  for (int i = 0; i < delay / 2; i++) {
+    __NOP();
+  }
+}
+
 void AD7606_ApplyConfig(void) {
   // Set parallel mode
   AD_WRITE(PAR_SEL, LOW);
@@ -89,9 +95,9 @@ void AD7606_ApplyConfig(void) {
 void AD7606_Reset() {
   // Reset the AD7606
   AD_WRITE(RESET, HIGH);
-  delay_ns(100);
+  AD7606_Delay(100);
   AD_WRITE(RESET, LOW);
-  delay_ns(100);
+  AD7606_Delay(100);
 }
 
 int AD7606_SetConfig(AD7606_Config *config) {
@@ -132,12 +138,12 @@ void AD7606_Sample(uint16_t *output) {
   ad7606_isSampling = TRUE;
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
   AD_WRITE(CONVSTA, LOW);
-  delay_ns(50);
+  AD7606_Delay(50);
   AD_WRITE(CONVSTA, HIGH);
   AD_WRITE(CONVSTB, LOW);
-  delay_ns(50);
+  AD7606_Delay(50);
   AD_WRITE(CONVSTB, HIGH);
-  delay_ns(100);
+  AD7606_Delay(100);
   if (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == LOW) {
     printf("Conversion not started\n");
     HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
@@ -145,35 +151,31 @@ void AD7606_Sample(uint16_t *output) {
   // Wait for BUSY to go low
   while (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == HIGH)
     ;
-  delay_ns(50);
+  AD7606_Delay(50);
   for (int i = 0; i < 8; i++) {
     HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, LOW);
-    delay_ns(50);
+    AD7606_Delay(50);
     if (ad7606_config.channels & (1 << i)) {
       *output = pins->DB_Port->IDR;
       output++;
     }
     HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, HIGH);
-    delay_ns(50);
+    AD7606_Delay(50);
   }
   ad7606_isSampling = FALSE;
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
 }
 
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output) {
-  // Config tim2 to trigger at sampleRate
-  int period = HAL_RCC_GetPCLK1Freq() * 2 / (TIM2->PSC + 1) / sampleRate - 1;
-  __HAL_TIM_SET_AUTORELOAD(&htim2, period);
-  __HAL_TIM_SET_COUNTER(&htim2, 0);
-  printf("period: %d\n", period);
+  TIM_RegisterCallback(pins->TIM_Handle, AD7606_TimerCallback);
   ad7606_sampleCount = count;
   ad7606_output = (uint16_t *)output;
   ad7606_badSampleFlag = FALSE;
   AD7606_Reset();
-  HAL_TIM_Base_Start_IT(&htim2);
+  TIM_StartPeriodic(pins->TIM_Handle, sampleRate);
   while (ad7606_sampleCount > 0) {
   }
-  HAL_TIM_Base_Stop_IT(&htim2);
+  TIM_StopPeriodic(pins->TIM_Handle);
   int sampleCount = count * popcount(ad7606_config.channels);
   for (int i = 0; i < sampleCount; i++) {
     output[i] = pins->PinsToData(output[i]);

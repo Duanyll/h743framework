@@ -60,9 +60,9 @@ void AD7606B_Delay() {
 
 void AD7606B_FullReset(void) {
   WRITE(RESET, HIGH);
-  delay_us(5);
+  TIM_DelayUs(5);
   WRITE(RESET, LOW);
-  delay_us(300);
+  TIM_DelayUs(300);
 }
 
 void AD7606B_Init(AD7606B_Pins *p) {
@@ -207,17 +207,8 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
 }
 
-void AD7606B_SetupTimer(double sampleRate) {
-  int period =
-      round(HAL_RCC_GetPCLK1Freq() * 2 / (TIM2->PSC + 1) / sampleRate) - 1;
-  __HAL_TIM_SET_AUTORELOAD(&htim2, period);
-  __HAL_TIM_SET_COUNTER(&htim2, 0);
-}
-
 BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
                             double sampleRate) {
-  // Note that clock for timer is 2x PCLK1
-  AD7606B_SetupTimer(sampleRate);
   AD7606B_sampleCount = count;
   AD7606B_output = (uint16_t *)data;
   AD7606B_channels = channels;
@@ -225,14 +216,15 @@ BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
   AD7606B_channelCount = popcount(channels);
   AD7606B_SampleCallback = NULL;
   AD7606B_LeaveRegisterMode();
-  HAL_TIM_Base_Start_IT(&htim2);
+  TIM_RegisterCallback(pins->TIM_Handle, AD7606B_TimerCallback);
+  TIM_StartPeriodic(pins->TIM_Handle, sampleRate);
   while (AD7606B_sampleCount > 0) {
     if (AD7606B_badSampleFlag) {
-      HAL_TIM_Base_Stop_IT(&htim2);
+      TIM_StopPeriodic(pins->TIM_Handle);
       return FALSE;
     }
   }
-  HAL_TIM_Base_Stop_IT(&htim2);
+  TIM_StopPeriodic(pins->TIM_Handle);
   int sampleCount = count * popcount(channels);
   for (int i = 0; i < sampleCount; i++) {
     data[i] = (int16_t)pins->PinsToData(data[i]);
@@ -242,20 +234,20 @@ BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
 
 void AD7606B_StartContinuousConvert(double sampleRate, uint8_t channels,
                                     void (*callback)(int16_t *data)) {
-  AD7606B_SetupTimer(sampleRate);
   AD7606B_sampleCount = -1;
   AD7606B_channels = channels;
   AD7606B_SampleCallback = callback;
   AD7606B_badSampleFlag = FALSE;
   AD7606B_channelCount = popcount(channels);
   AD7606B_LeaveRegisterMode();
-  HAL_TIM_Base_Start_IT(&htim2);
+  TIM_RegisterCallback(pins->TIM_Handle, AD7606B_TimerCallback);
+  TIM_StartPeriodic(pins->TIM_Handle, sampleRate);
 }
 void AD7606B_StopContinuousConvert(void) {
   AD7606B_SampleCallback = NULL;
   AD7606B_badSampleFlag = FALSE;
   AD7606B_sampleCount = 0;
-  HAL_TIM_Base_Stop_IT(&htim2);
+  TIM_StopPeriodic(pins->TIM_Handle);
 }
 
 void AD7606B_TimerCallback() {
@@ -268,7 +260,7 @@ void AD7606B_TimerCallback() {
     AD7606B_output += AD7606B_channelCount;
     AD7606B_sampleCount--;
   } else if (AD7606B_sampleCount == 0) {
-    HAL_TIM_Base_Stop_IT(&htim2);
+    TIM_StopPeriodic(pins->TIM_Handle);
   } else if (AD7606B_sampleCount == -1) {
     AD7606B_ADCConvert(AD7606B_lastSample, AD7606B_channels);
   }

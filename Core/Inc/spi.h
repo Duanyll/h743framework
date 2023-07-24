@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file    spi.h
-  * @brief   This file contains all the function prototypes for
-  *          the spi.c file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    spi.h
+ * @brief   This file contains all the function prototypes for
+ *          the spi.c file
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __SPI_H__
@@ -41,10 +41,12 @@ extern SPI_HandleTypeDef hspi3;
 void MX_SPI3_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void SPI_StartDMARecieve(uint16_t *buffer, uint16_t totalSize, uint16_t* output);
+void SPI_StartDMARecieve(uint16_t *buffer, uint16_t totalSize, uint16_t *output,
+                         TIM_HandleTypeDef *htim);
 void SPI_StopDMARecieve();
 void SPI_RequestOutput();
-uint16_t SPI_GetOutputAtTime();
+void SPI_WaitOutput();
+uint16_t SPI_GetResampledOutput();
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
@@ -52,4 +54,3 @@ uint16_t SPI_GetOutputAtTime();
 #endif
 
 #endif /* __SPI_H__ */
-

@@ -24,13 +24,14 @@ typedef struct {
   uint16_t SCK_Pin;
   GPIO_TypeDef *SDI_Port;
   uint16_t SDI_Pin;
+
+  TIM_HandleTypeDef *TIM_Handle;
 } DAC8830_Pins;
 
 void DAC8830_Init(DAC8830_Pins *pins);
 void DAC8830_SetVoltage(DAC8830_Pins *pins, uint16_t voltage);
 
 void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude);
-void DAC8830_StopSineWave();
-void DAC8830_TimerCallback();
+void DAC8830_StopSineWave(DAC8830_Pins *pins);
 
 #endif

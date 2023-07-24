@@ -60,6 +60,8 @@ typedef struct {
 
   GPIO_TypeDef *DB_Port;
   AD7606_DataConvertFunction *PinsToData;
+
+  TIM_HandleTypeDef* TIM_Handle;
 } AD7606_Pins;
 
 #define AD_RANGE_10V 1
@@ -99,7 +101,5 @@ void AD7606_Sample(uint16_t *output);
 // operation is successful. Only save enabled channels into output in
 // interleaved format.
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output);
-
-void AD7606_TimerCallback(void);
 
 #endif

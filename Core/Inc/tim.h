@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file    tim.h
-  * @brief   This file contains all the function prototypes for
-  *          the tim.c file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    tim.h
+ * @brief   This file contains all the function prototypes for
+ *          the tim.c file
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __TIM_H__
@@ -50,15 +50,27 @@ void MX_TIM4_Init(void);
 void MX_TIM6_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void delay_ns(uint32_t ns);
-void delay_us(uint32_t us);
-void delay_ms(uint32_t ms);
+// Delay in microseconds with SysTick
+void TIM_DelayUs(uint32_t us);
 
-void TIM_InitUsTimer();
+// Start a timer that counts microseconds
+void TIM_StartUsTimer(TIM_HandleTypeDef *htim);
+// Get a microsecond timestamp from the timer
 int64_t TIM_GetUsTimer();
+// Stop the timer
 void TIM_StopUsTimer();
 
-void TIM_SetTIM6Callback(void (*callback)(void));
+typedef void (*TIM_Callback)(void);
+// Register a callback to be called when the timer triggers
+void TIM_RegisterCallback(TIM_HandleTypeDef *htim, TIM_Callback callback);
+// Unregister a callback
+void TIM_UnregisterCallback(TIM_HandleTypeDef *htim);
+// Start a timer that triggers at a given sample rate. This function assumes the
+// prescaler is set to a proper value for the given sample rate and then
+// calculates the auto reload value.
+void TIM_StartPeriodic(TIM_HandleTypeDef *htim, double sampleRate);
+// Stop the timer
+void TIM_StopPeriodic(TIM_HandleTypeDef *htim);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
@@ -66,4 +78,3 @@ void TIM_SetTIM6Callback(void (*callback)(void));
 #endif
 
 #endif /* __TIM_H__ */
-

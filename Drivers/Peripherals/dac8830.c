@@ -89,15 +89,14 @@ void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude) {
   } else {
     sine_wave_step = 1;
   }
-  int base_freq = HAL_RCC_GetPCLK1Freq() / (TIM3->PSC + 1);
-  int period = base_freq / (frequency * SAMPLES_PER_PERIOD / sine_wave_step);
-  __HAL_TIM_SET_AUTORELOAD(&htim3, period - 1);
-  HAL_TIM_Base_Start_IT(&htim3);
+  double sampleRate = frequency / sine_wave_step * SAMPLES_PER_PERIOD;
+  TIM_RegisterCallback(pins->TIM_Handle, DAC8830_TimerCallback);
+  TIM_StartPeriodic(pins->TIM_Handle, sampleRate);
 }
 
-void DAC8830_StopSineWave() {
+void DAC8830_StopSineWave(DAC8830_Pins *pins) {
   sine_wave_chip = 0;
-  HAL_TIM_Base_Stop_IT(&htim3);
+  TIM_StopPeriodic(pins->TIM_Handle);
 }
 
 void DAC8830_TimerCallback() {

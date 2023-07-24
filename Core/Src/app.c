@@ -17,37 +17,39 @@
 #include "tim.h"
 #include "dac.h"
 
-UART_HandleTypeDef *computer_uart;
+UART_HandleTypeDef *computer;
 
-AD9959_GlobalConfig ad9959_global_config;
-AD9959_ChannelConfig ad9959_channel0_config;
-AD9959_ChannelConfig ad9959_channel1_config;
 AD7606B_Config ad7606b_config;
+AD7606B_Pins ad7606b_pins;
 
-void APP_InitAD9959() {
-  AD9959_Init(&ad9959_global_config);
-  double sysclk = 500e6;
-  AD9959_InitChannelConfig(&ad9959_channel0_config);
-  AD9959_InitChannelConfig(&ad9959_channel1_config);
-
-  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0_config, 100e6, sysclk);
-  AD9959_SetPhase(&ad9959_channel0_config, 0);
-  AD9959_SetAmplitude(&ad9959_channel0_config, 1023);
-
-  AD9959_IOUpdate();
-
-  AD9959_SelectChannels(&ad9959_global_config,
-                        AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
-  ad9959_channel1_config.cfr.dac_power_down = 1;
-  ad9959_channel1_config.cfr.digital_power_down = 1;
-  AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1_config.cfr.raw);
-
-  AD9959_IOUpdate();
-}
+uint16_t identity_u16(uint16_t x) { return x; }
 
 void APP_InitAD7606B() {
-  AD7606B_Init();
+  ad7606b_pins.CS_Port = AD_CS_GPIO_Port;
+  ad7606b_pins.CS_Pin = AD_CS_Pin;
+  ad7606b_pins.RD_Port = AD_RD_GPIO_Port;
+  ad7606b_pins.RD_Pin = AD_RD_Pin;
+  ad7606b_pins.BUSY_Port = AD_BUSY_GPIO_Port;
+  ad7606b_pins.BUSY_Pin = AD_BUSY_Pin;
+  ad7606b_pins.WR_Port = AD_WR_GPIO_Port;
+  ad7606b_pins.WR_Pin = AD_WR_Pin;
+
+  ad7606b_pins.DB_Port = AD_D0_GPIO_Port;
+  ad7606b_pins.DataToPins = identity_u16;
+  ad7606b_pins.PinsToData = identity_u16;
+
+  ad7606b_pins.OS0_Port = AD_OS0_GPIO_Port;
+  ad7606b_pins.OS0_Pin = AD_OS0_Pin;
+  ad7606b_pins.OS1_Port = AD_OS1_GPIO_Port;
+  ad7606b_pins.OS1_Pin = AD_OS1_Pin;
+  ad7606b_pins.OS2_Port = AD_OS2_GPIO_Port;
+  ad7606b_pins.OS2_Pin = AD_OS2_Pin;
+  ad7606b_pins.PAR_SEL_Port = AD_PAR_SEL_GPIO_Port;
+  ad7606b_pins.PAR_SEL_Pin = AD_PAR_SEL_Pin;
+
+  ad7606b_pins.TIM_Handle = &htim2;
+
+  AD7606B_Init(&ad7606b_pins);
   AD7606B_InitConfig(&ad7606b_config);
   ad7606b_config.raw[AD7606C_REG_BANDWIDTH] = 0xff;
   AD7606B_ParallelRegisterWrite(AD7606C_REG_BANDWIDTH,
@@ -57,58 +59,7 @@ void APP_InitAD7606B() {
   AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
   AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
 
-  // int ad_version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
-  // UART_Printf(computer_uart, "AD7606B version: %d\n", ad_version);
-
   AD7606B_LeaveRegisterMode();
-}
-
-SWIIC_Config si5351_swiic;
-void APP_InitSI5351() {
-  si5351_swiic.delay = 100;
-  si5351_swiic.SCL_Port = GPIOC;
-  si5351_swiic.SCL_Pin = GPIO_PIN_13;
-  si5351_swiic.SDA_Port = GPIOC;
-  si5351_swiic.SDA_Pin = GPIO_PIN_14;
-  SWIIC_Init(&si5351_swiic);
-  SI5351_Init(&si5351_swiic, 0);
-  SI5351_SetupCLK0((76 + 48) * 1000000, SI5351_DRIVE_STRENGTH_2MA);
-  SI5351_SetupCLK2(100000000, SI5351_DRIVE_STRENGTH_8MA);
-  SI5351_EnableOutputs(0x05);
-}
-
-AD9910_Pins ad9910_pins;
-AD9910_Config ad9910_config;
-void APP_InitAD9910() {
-  // SDIO -> B12
-  // IOUP -> B11
-  // PF0 -> B10
-  // PF1 -> B9
-  // PF2 -> B8
-  // RST -> B7
-  // SCK -> B6
-  // CSB -> B5
-  ad9910_pins.SDIO_Port = GPIOB;
-  ad9910_pins.SDIO_Pin = GPIO_PIN_12;
-  ad9910_pins.IOUP_Port = GPIOB;
-  ad9910_pins.IOUP_Pin = GPIO_PIN_11;
-  ad9910_pins.PF0_Port = GPIOB;
-  ad9910_pins.PF0_Pin = GPIO_PIN_10;
-  ad9910_pins.PF1_Port = GPIOB;
-  ad9910_pins.PF1_Pin = GPIO_PIN_9;
-  ad9910_pins.PF2_Port = GPIOB;
-  ad9910_pins.PF2_Pin = GPIO_PIN_8;
-  ad9910_pins.RST_Port = GPIOB;
-  ad9910_pins.RST_Pin = GPIO_PIN_7;
-  ad9910_pins.SCK_Port = GPIOB;
-  ad9910_pins.SCK_Pin = GPIO_PIN_6;
-  ad9910_pins.CSB_Port = GPIOB;
-  ad9910_pins.CSB_Pin = GPIO_PIN_5;
-  UART_Printf(computer_uart, "------------\n");
-  AD9910_Init(&ad9910_pins);
-  AD9910_InitConfig(&ad9910_config);
-  AD9910_SetupClock(&ad9910_config);
-  AD9910_SetupSingleTone(&ad9910_config, 50e6, 0, AD9910_MAX_AMP);
 }
 
 #define AD_SAMPLE_COUNT 2048
@@ -127,46 +78,10 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
                        uint32_t sample_rate) {
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
   AD7606B_CollectSamples(ad_data, channels, sample_count, sample_rate);
-  HAL_UART_Transmit(computer_uart, "\xff\xff\xff\xff", 4, 1000);
-  HAL_UART_Transmit(computer_uart, (uint8_t *)ad_data,
+  HAL_UART_Transmit(computer, "\xff\xff\xff\xff", 4, 1000);
+  HAL_UART_Transmit(computer, (uint8_t *)ad_data,
                     sample_count * 2 * popcount(channels), 10000);
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-}
-
-void APP_SetFrequency(uint32_t frequency) {
-  AD9959_SelectChannels(&ad9959_global_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0_config, frequency, 500e6);
-  AD9959_IOUpdate();
-}
-
-uint16_t spi_buffer[2048];
-uint16_t spi_output[1024];
-
-void APP_DACOutCallback() {
-  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED3_Pin);
-  int16_t level = SPI_GetOutputAtTime();
-  // HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, level);
-  // HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-  DAC8830_SetVoltage(0x01, level * 4);
-}
-
-void APP_SpiTest() {
-  TIM_SetTIM6Callback(APP_DACOutCallback);
-  int dac_sample_rate = 100000;
-  int period = (HAL_RCC_GetPCLK1Freq() * 2) / (TIM6->PSC + 1) / dac_sample_rate - 1;
-  TIM6->ARR = period;
-  SPI_StartDMARecieve(0x24000000, 2048, spi_output);
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_SET);
-  HAL_TIM_Base_Start_IT(&htim6);
-  for (int i = 1; i <= 100; i++) {
-    SPI_RequestOutput();
-    UART_Printf(computer_uart, "-------------\n");
-    for (int j = 0; j < 1024; j++) {
-      UART_Printf(computer_uart, "%d,\n", spi_output[j]);
-    }
-  }
-  HAL_TIM_Base_Stop_IT(&htim6);
-  SPI_StopDMARecieve();
 }
 
 void APP_HexCommandCallback(uint8_t *data, int len) {
@@ -184,23 +99,13 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
     if (len >= 10)
       sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
-  } else if (*data == '\x02') {
-    // 4 byte frequency
-    uint32_t frequency = *(uint32_t *)(data + 1);
-    APP_SetFrequency(frequency);
-  } else if (*data == '\x03') {
-    APP_SpiTest();
-  }
+  } 
 }
 
 void APP_Init() {
-  computer_uart = &huart6;
-  UART_ResetHexRX(computer_uart);
-  // APP_InitAD9959();
-  // APP_InitAD7606B();
-  // APP_InitSI5351();
-  APP_InitAD9910();
-  DAC8830_Init();
+  computer = &huart6;
+  UART_ResetHexRX(computer);
+  APP_InitAD7606B();
 }
 
 void APP_Loop() { UART_PollHexData(APP_HexCommandCallback); }

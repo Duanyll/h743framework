@@ -15,7 +15,7 @@ void SCREEN_Init(UART_HandleTypeDef *huart) {
   SCREEN_EndLine();
   UART_SendString(h, "rest");
   SCREEN_EndLine();
-  delay_ms(10);
+  HAL_Delay(10);
 }
 
 void SCREEN_SetPage(const char *page) {
