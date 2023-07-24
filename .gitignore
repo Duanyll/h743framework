@@ -2,6 +2,9 @@ build/
 .vscode/
 **/*.npy
 **/*.pt
+**/*.pth
+SignalNet/data
+**/*.pyc
 
 # Prerequisites
 *.d
