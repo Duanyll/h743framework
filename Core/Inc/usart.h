@@ -48,14 +48,7 @@ void MX_USART2_UART_Init(void);
 void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-void UART_ResetJsonRX(UART_HandleTypeDef *huart);
-void UART_PollJsonData(void (*callback)(cJSON *json));
-void UART_ResetHexRX(UART_HandleTypeDef *huart);
-void UART_PollHexData(void (*callback)(uint8_t *data, int len));
 
-void UART_SendJson(UART_HandleTypeDef *huart, cJSON *json);
-void UART_SendString(UART_HandleTypeDef *huart, char *str);
-void UART_Printf(UART_HandleTypeDef *huart, char *fmt, ...);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

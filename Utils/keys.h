@@ -1,5 +1,6 @@
 #pragma once
-#include <stm32h7xx_hal.h>
+
+#include "main.h"
 
 #define KEYS_COUNT 4
 #define KEYS_DEBOUNCE_TIME 50

@@ -38,14 +38,10 @@ BUILD_DIR = build
 C_SOURCES =  \
 Core/Src/adc.c \
 Core/Src/app.c \
-Core/Src/cJSON.c \
 Core/Src/dac.c \
 Core/Src/dma.c \
 Core/Src/gpio.c \
-Core/Src/keys.c \
 Core/Src/main.c \
-Core/Src/retarget.c \
-Core/Src/signal.c \
 Core/Src/spi.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
@@ -95,7 +91,13 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
 SignalNet/Src/graph.c \
 SignalNet/Src/lenet_params.c \
 SignalNet/Src/operators.c \
-SignalNet/Src/signet_params.c
+SignalNet/Src/signet_params.c \
+Utils/cJSON.c \
+Utils/keys.c \
+Utils/retarget.c \
+Utils/serial.c \
+Utils/signal.c \
+Utils/timers.c
 
 
 CPP_SOURCES = \
@@ -182,7 +184,8 @@ C_INCLUDES =  \
 -IDrivers/Peripherals \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
--ISignalNet/Inc/
+-ISignalNet/Inc/ \
+-IUtils
 
 
 

@@ -91,6 +91,7 @@ includeDirectories:
   - Drivers/Peripherals/**
   - Drivers/CMSIS/DSP/Include/
   - SignalNet/Inc/
+  - Utils/**
 
 
 # Files that should be included in the compilation.
@@ -104,7 +105,7 @@ sourceFiles:
   - Core/Lib/**
   - Drivers/Peripherals/**/*.c
   - SignalNet/Src/*.c
-
+  - Utils/*.c
 
 # When no makefile is present it will show a warning pop-up.
 # However when compilation without the CubeMX Makefile is desired, this can be turned of.

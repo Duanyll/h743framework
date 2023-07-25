@@ -2,7 +2,7 @@
 
 #include "ad9959.h"
 
-#include "tim.h"
+#include "timers.h"
 #include <math.h>
 
 static AD9959_Pins *pins;

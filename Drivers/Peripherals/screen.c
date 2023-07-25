@@ -3,8 +3,7 @@
 
 #include "screen.h"
 
-#include "tim.h"
-#include "usart.h"
+#include "serial.h"
 
 static UART_HandleTypeDef *h;
 

@@ -4,15 +4,13 @@
 #include "app.h"
 
 #include "ad7606b.h"
-#include "hmc833.h"
 #include "keys.h"
 #include "nn.h"
 #include "screen.h"
 #include "signal.h"
 #include "spi.h"
-#include "usart.h"
-#include "tim.h"
-#include "dac.h"
+#include "serial.h"
+#include "timers.h"
 #include "retarget.h"
 
 UART_HandleTypeDef *computer;
@@ -60,26 +58,6 @@ void APP_InitAD7606B() {
   AD7606B_LeaveRegisterMode();
 }
 
-HMC833_Pins hmc833_pins;
-HMC833_Config hmc833_config;
-
-void APP_InitHMC833() {
-  hmc833_pins.LD_Port = GPIOB;
-  hmc833_pins.LD_Pin = GPIO_PIN_5;
-  hmc833_pins.SCK_Port = GPIOB;
-  hmc833_pins.SCK_Pin = GPIO_PIN_6;
-  hmc833_pins.SDI_Port = GPIOB;
-  hmc833_pins.SDI_Pin = GPIO_PIN_7;
-  hmc833_pins.SEN_Port = GPIOB;
-  hmc833_pins.SEN_Pin = GPIO_PIN_8;
-  hmc833_pins.CE_Port = GPIOB;
-  hmc833_pins.CE_Pin = GPIO_PIN_9;
-
-  HMC833_Init(&hmc833_pins);
-  HMC833_InitConfig(&hmc833_config);
-  HMC833_SetFrequency(&hmc833_config, 100e6);
-}
-
 #define AD_SAMPLE_COUNT 2048
 int16_t ad_data[AD_SAMPLE_COUNT * 4];
 
@@ -96,7 +74,7 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
                        uint32_t sample_rate) {
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
   AD7606B_CollectSamples(ad_data, channels, sample_count, sample_rate);
-  HAL_UART_Transmit(computer, "\xff\xff\xff\xff", 4, 1000);
+  UART_SendString(computer, "\xff\xff\xff\xff");
   HAL_UART_Transmit(computer, (uint8_t *)ad_data,
                     sample_count * 2 * popcount(channels), 10000);
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
@@ -128,7 +106,6 @@ void APP_Init() {
   RetargetInit(computer);
   UART_ResetHexRX(computer);
   APP_InitAD7606B();
-  APP_InitHMC833();
 }
 
 void APP_Loop() { UART_PollHexData(APP_HexCommandCallback); }

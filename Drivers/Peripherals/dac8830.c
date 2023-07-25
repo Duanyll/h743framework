@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#include "tim.h"
+#include "timers.h"
 
 #define WRITE(pin, value)                                                      \
   HAL_GPIO_WritePin(pins->pin##_Port, pins->pin##_Pin, value)

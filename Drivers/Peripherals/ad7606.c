@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#include "tim.h"
+#include "timers.h"
 
 static AD7606_Pins *pins;
 

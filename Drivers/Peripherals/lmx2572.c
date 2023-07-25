@@ -1,6 +1,7 @@
 #ifdef LMX2572_ENABLE
 
 #include "lmx2572.h"
+#include "timers.h"
 
 static LMX2572_Pins *pins;
 #define WRITE(pin, val)                                                        \
@@ -11,7 +12,7 @@ void LMX2572_SendData(uint32_t data) {
   WRITE(CS, LOW);
 
   WRITE(SCK, HIGH);
-  HAL_Delay_us(1);
+  TIM_DelayUs(1);
   for (int i = 0; i < 24; i++) {
     WRITE(SCK, LOW);
     if (k & 0x800000) {
@@ -20,7 +21,7 @@ void LMX2572_SendData(uint32_t data) {
       WRITE(SDI, LOW);
     }
     WRITE(SCK, HIGH);
-    HAL_Delay_us(1);
+    TIM_DelayUs(1);
     k = k << 1;
   }
   WRITE(CS, HIGH);
@@ -49,6 +50,10 @@ void LMX2572_Init(LMX2572_Pins *p) {
   s.Pin = pins->ENABLE_Pin;
   HAL_GPIO_Init(pins->ENABLE_Port, &s);
 }
+
+// Suppress -Wunused-variable
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 static uint32_t R[126];
 static double Frequencyout = 0;
@@ -1112,6 +1117,8 @@ void LMX2572_RegisterData(double Freqout, double Space, uint8_t power) {
 }
 
 #pragma endregion
+
+#pragma GCC diagnostic pop
 
 void LMX2572_SetFrequency(uint32_t freq) {
   WRITE(ENABLE, HIGH);
