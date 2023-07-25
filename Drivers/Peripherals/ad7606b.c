@@ -105,13 +105,6 @@ void AD7606B_Init(AD7606B_Pins *p) {
   AD7606B_FullReset();
 }
 
-static uint32_t bitwise_reverse(uint8_t x) {
-  // Reverse the bits in a byte
-  return ((x & 0x01) << 7) | ((x & 0x02) << 5) | ((x & 0x04) << 3) |
-         ((x & 0x08) << 1) | ((x & 0x10) >> 1) | ((x & 0x20) >> 3) |
-         ((x & 0x40) >> 5) | ((x & 0x80) >> 7);
-}
-
 static int popcount(uint32_t x) {
   // Count the number of bits set in a 32-bit integer
   int count = 0;
@@ -136,7 +129,7 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBInput();
   WRITE(RD, LOW);
   AD7606B_Delay();
-  uint8_t data = AD7606B_PinsToData(pins->DB_Port->IDR);
+  uint8_t data = pins->PinsToData(pins->DB_Port->IDR);
   WRITE(RD, HIGH);
   WRITE(CS, HIGH);
   AD7606B_Delay();
