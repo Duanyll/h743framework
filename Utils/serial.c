@@ -3,6 +3,7 @@
 
 #include "serial.h"
 
+// TODO: Add enabled UART ports here
 #define FOREACH_UART_PORT(apply)                                               \
   apply(USART1) apply(USART2) apply(USART3) apply(USART6)
 

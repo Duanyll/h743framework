@@ -104,27 +104,68 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
   }
 }
 
+void APP_KeyCallback(uint8_t event) {
+  if (event == KEYS_EVENT_PRESS) {
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  } else if (event == KEYS_EVENT_RELEASE) {
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+  } else if (event == KEYS_EVENT_HOLD) {
+    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+  }
+}
+
+KEYS_Pins keys_pins;
+void APP_InitKeys() {
+  keys_pins.keyCount = 4;
+  keys_pins.pins[0].port = SWITCH1_GPIO_Port;
+  keys_pins.pins[0].pin = SWITCH1_Pin;
+  keys_pins.pins[0].callback = APP_KeyCallback;
+  keys_pins.pins[1].port = SWITCH2_GPIO_Port;
+  keys_pins.pins[1].pin = SWITCH2_Pin;
+  keys_pins.pins[1].callback = APP_KeyCallback;
+  keys_pins.pins[2].port = SWITCH3_GPIO_Port;
+  keys_pins.pins[2].pin = SWITCH3_Pin;
+  keys_pins.pins[2].callback = APP_KeyCallback;
+  keys_pins.pins[3].port = SWITCH4_GPIO_Port;
+  keys_pins.pins[3].pin = SWITCH4_Pin;
+  keys_pins.pins[3].callback = APP_KeyCallback;
+  keys_pins.htim = &htim7;
+
+  KEYS_Init(&keys_pins);
+}
+
 UART_RxBuffer computer_rx_buf;
 char computer_command[UART_RX_BUF_SIZE];
+char *computer_command_ptr;
 
 void APP_Init() {
   computer = &huart6;
   RetargetInit(computer);
   APP_InitAD7606B();
+  APP_InitKeys();
 
   UART_RxBuffer_Init(&computer_rx_buf, computer);
+  computer_command_ptr = computer_command;
   UART_Open(&computer_rx_buf);
+  KEYS_Start();
 }
 
 void APP_Loop() {
-  int len = UART_ReadUntil(&computer_rx_buf, computer_command, UART_RX_BUF_SIZE,
-                           "\n", -1);
-  if (len > 0) {
+  int len = UART_ReadUntil(
+      &computer_rx_buf, computer_command_ptr,
+      computer_command + UART_RX_BUF_SIZE - computer_command_ptr, "\n", 1);
+  computer_command_ptr += len;
+  if (len > 0 && computer_command_ptr[-1] == '\n') {
     APP_HexCommandCallback((uint8_t *)computer_command, len - 1);
+    computer_command_ptr = computer_command;
   } else if (computer_rx_buf.isOpen == FALSE) {
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
     HAL_Delay(100);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    computer_command_ptr = computer_command;
     UART_Open(&computer_rx_buf);
   }
+
+  KEYS_Poll();
 }

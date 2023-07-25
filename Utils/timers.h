@@ -9,8 +9,9 @@
   _(TIM3)                                                                      \
   _(TIM4)                                                                      \
   _(TIM5)                                                                      \
-  _(TIM6)
-
+  _(TIM6)                                                                      \
+  _(TIM7)                                                                      
+  
 // Delay in microseconds with SysTick
 void TIM_DelayUs(uint32_t us);
 
