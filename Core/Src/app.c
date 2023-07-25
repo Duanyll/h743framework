@@ -6,12 +6,12 @@
 #include "ad7606b.h"
 #include "keys.h"
 #include "nn.h"
+#include "retarget.h"
 #include "screen.h"
+#include "serial.h"
 #include "signal.h"
 #include "spi.h"
-#include "serial.h"
 #include "timers.h"
-#include "retarget.h"
 
 UART_HandleTypeDef *computer;
 
@@ -81,7 +81,7 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
 }
 
 void APP_HexCommandCallback(uint8_t *data, int len) {
-  if (*data == '\x01') {
+  if (*data == 1) {
     // 1 byte channels
     // 4 byte sample count
     // 4 byte sample rate
@@ -95,17 +95,36 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
     if (len >= 10)
       sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
-  } else if (*data == '\x02') {
+  } else if (*data == 2) {
     double freq = TIM_CountFrequencySync(&htim2, 100);
     printf("Freq: %fMHz\n", freq / 1000000.0);
+  } else {
+    // Echo back
+    UART_SendHex(computer, data, len);
   }
 }
+
+UART_RxBuffer computer_rx_buf;
+char computer_command[UART_RX_BUF_SIZE];
 
 void APP_Init() {
   computer = &huart6;
   RetargetInit(computer);
-  UART_ResetHexRX(computer);
   APP_InitAD7606B();
+
+  UART_RxBuffer_Init(&computer_rx_buf, computer);
+  UART_Open(&computer_rx_buf);
 }
 
-void APP_Loop() { UART_PollHexData(APP_HexCommandCallback); }
+void APP_Loop() {
+  int len = UART_ReadUntil(&computer_rx_buf, computer_command, UART_RX_BUF_SIZE,
+                           "\n", -1);
+  if (len > 0) {
+    APP_HexCommandCallback((uint8_t *)computer_command, len - 1);
+  } else if (computer_rx_buf.isOpen == FALSE) {
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    UART_Open(&computer_rx_buf);
+  }
+}

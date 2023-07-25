@@ -3,104 +3,213 @@
 
 #include "serial.h"
 
-#define UART_STATE_JSON_WAIT 0     // waiting for '{'
-#define UART_STATE_JSON_RX 1       // receiving json, terminated by '\n'
-#define UART_STATE_JSON_COMPLETE 2 // json received
-#define UART_STATE_HEX_RX 3       // receiving hex, terminated by '\xff\xff\xff'
-#define UART_STATE_HEX_COMPLETE 4 // hex received
-typedef struct {
-  uint8_t *rx_cur;
-  uint8_t *rx_end;
-  uint8_t rx[UART_RX_BUF_SIZE];
-  int state;
-  UART_HandleTypeDef *huart;
-} UART_RxBuffer;
-UART_RxBuffer UART_rxBuf;
+#define FOREACH_UART_PORT(apply)                                               \
+  apply(USART1) apply(USART2) apply(USART3) apply(USART6)
 
-void UART_ResetJsonRX(UART_HandleTypeDef *huart) {
-  UART_rxBuf.rx_cur = UART_rxBuf.rx;
-  UART_rxBuf.rx_end = UART_rxBuf.rx + UART_RX_BUF_SIZE;
-  UART_rxBuf.state = UART_STATE_JSON_WAIT;
-  UART_rxBuf.huart = huart;
-  HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
+#define DEFINE_UART_BUFFER_POINTER(port) volatile UART_RxBuffer *port##RxBuffer;
+FOREACH_UART_PORT(DEFINE_UART_BUFFER_POINTER)
+
+volatile UART_RxBuffer *UART_GetRxBuffer(UART_HandleTypeDef *huart) {
+#define GET_UART_BUFFER_POINTER(port)                                          \
+  if (huart->Instance == port) {                                               \
+    return port##RxBuffer;                                                     \
+  }
+  FOREACH_UART_PORT(GET_UART_BUFFER_POINTER)
+  return NULL;
 }
 
-void UART_ResetHexRX(UART_HandleTypeDef *huart) {
-  UART_rxBuf.rx_cur = UART_rxBuf.rx;
-  UART_rxBuf.rx_end = UART_rxBuf.rx + UART_RX_BUF_SIZE;
-  UART_rxBuf.state = UART_STATE_HEX_RX;
-  UART_rxBuf.huart = huart;
-  HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
+// Init UART_RxBuffer struct
+void UART_RxBuffer_Init(UART_RxBuffer *rxBuf, UART_HandleTypeDef *huart) {
+  rxBuf->huart = huart;
+  rxBuf->head = 0;
+  rxBuf->tail = 0;
+  rxBuf->isOpen = FALSE;
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  if (huart == UART_rxBuf.huart) {
-    char ch = *UART_rxBuf.rx_cur;
-    // JSON mode
-    if (UART_rxBuf.state == UART_STATE_JSON_WAIT) {
-      if (ch == '{') {
-        UART_rxBuf.state = UART_STATE_JSON_RX;
-        UART_rxBuf.rx_cur++;
-      }
-      HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
-    } else if (UART_rxBuf.state == UART_STATE_JSON_RX) {
-      if (ch == '\n') {
-        UART_rxBuf.state = UART_STATE_JSON_COMPLETE;
-        *UART_rxBuf.rx_cur = '\0';
-      } else {
-        UART_rxBuf.rx_cur++;
-        if (UART_rxBuf.rx_cur >= UART_rxBuf.rx_end) {
-          UART_rxBuf.rx_cur = UART_rxBuf.rx;
-          UART_rxBuf.state = UART_STATE_JSON_WAIT;
-          printf("UART Rx buffer overflow\n");
-        }
-        HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
-      }
-      // HEX mode
-    } else if (UART_rxBuf.state == UART_STATE_HEX_RX) {
-      if (ch == '\xff' && UART_rxBuf.rx_cur - UART_rxBuf.rx >= 2 &&
-          *(UART_rxBuf.rx_cur - 1) == '\xff' &&
-          *(UART_rxBuf.rx_cur - 2) == '\xff') {
-        UART_rxBuf.state = UART_STATE_HEX_COMPLETE;
-        UART_rxBuf.rx_cur -= 2;
-        *UART_rxBuf.rx_cur = '\0';
-      } else {
-        UART_rxBuf.rx_cur++;
-        if (UART_rxBuf.rx_cur >= UART_rxBuf.rx_end) {
-          UART_rxBuf.rx_cur = UART_rxBuf.rx;
-          UART_rxBuf.state = UART_STATE_HEX_RX;
-          printf("UART Rx buffer overflow\n");
-        }
-        HAL_UART_Receive_IT(huart, UART_rxBuf.rx_cur, 1);
-      }
+  volatile UART_RxBuffer *rxBuf = UART_GetRxBuffer(huart);
+  if (rxBuf == NULL) {
+    return;
+  }
+  if (rxBuf->isOpen == FALSE) {
+    return;
+  }
+  int newHead = (rxBuf->head + 1) % UART_RX_BUF_SIZE;
+  if (newHead == rxBuf->tail) {
+    // Buffer full
+    UART_Close((UART_RxBuffer *)rxBuf);
+    return;
+  }
+  rxBuf->buf[rxBuf->head] = rxBuf->recv;
+  rxBuf->head = newHead;
+  HAL_UART_Receive_IT(huart, (uint8_t *)&rxBuf->recv, 1);
+}
+
+// Open UART port and start receiving data via interrupt
+BOOL UART_Open(UART_RxBuffer *rxBuf) {
+  if (rxBuf->isOpen == TRUE) {
+    return FALSE;
+  }
+#define SET_UART_BUFFER_POINTER(port)                                          \
+  if (rxBuf->huart->Instance == port) {                                        \
+    if (port##RxBuffer != NULL) {                                              \
+      return FALSE;                                                            \
+    }                                                                          \
+    port##RxBuffer = rxBuf;                                                    \
+  }
+  FOREACH_UART_PORT(SET_UART_BUFFER_POINTER)
+  rxBuf->head = 0;
+  rxBuf->tail = 0;
+  rxBuf->isOpen = TRUE;
+  HAL_UART_Receive_IT(rxBuf->huart, (uint8_t *)&rxBuf->recv, 1);
+  return 1;
+}
+
+/// @brief Try to read data with given length from UART_RxBuffer in blocking
+/// mode. Only call this on main thread.
+/// @param rxBuf Pointer to UART_RxBuffer struct
+/// @param out Output buffer
+/// @param len Max length to read
+/// @param timeout Timeout in ms. Set to 0 will cause the function to return
+/// immediately, even if no data is read. Set to -1 will cause the function to
+/// block forever until len bytes are read.
+/// @return Number of bytes read into out.
+int UART_Read(UART_RxBuffer *rxBuf, char *out, int len, int timeout) {
+  if (rxBuf->isOpen == FALSE) {
+    return 0;
+  }
+  volatile UART_RxBuffer *buf = UART_GetRxBuffer(rxBuf->huart);
+  if (buf == NULL) {
+    return 0;
+  }
+  int received = 0;
+  while (buf->tail != buf->head && buf->isOpen) {
+    *out = buf->buf[buf->tail];
+    buf->tail = (buf->tail + 1) % UART_RX_BUF_SIZE;
+    out++;
+    received++;
+    if (received == len) {
+      return received;
     }
   }
-}
-
-void UART_PollJsonData(void (*callback)(cJSON *json)) {
-  if (UART_rxBuf.state == UART_STATE_JSON_COMPLETE) {
-    cJSON *json = cJSON_Parse((char *)UART_rxBuf.rx);
-    (*callback)(json);
-    UART_ResetJsonRX(UART_rxBuf.huart);
-    cJSON_Delete(json);
-    free(json);
+  if (timeout == 0)
+    return received;
+  if (timeout < 0)
+    timeout = 0x3f3f3f3f;
+  int start = HAL_GetTick();
+  while (received < len && buf->isOpen && HAL_GetTick() - start < timeout) {
+    if (buf->tail != buf->head) {
+      *out = buf->buf[buf->tail];
+      buf->tail = (buf->tail + 1) % UART_RX_BUF_SIZE;
+      out++;
+      received++;
+    }
   }
+  return received;
 }
 
-void UART_PollHexData(void (*callback)(uint8_t *data, int len)) {
-  if (UART_rxBuf.state == UART_STATE_HEX_COMPLETE) {
-    (*callback)(UART_rxBuf.rx, UART_rxBuf.rx_cur - UART_rxBuf.rx);
-    UART_ResetHexRX(UART_rxBuf.huart);
+static BOOL check_delim_present(char *out, int received, const char *delim,
+                                int delimLen) {
+  if (received < delimLen) {
+    return FALSE;
   }
+  for (int i = 0; i < delimLen; i++) {
+    if (*(out - i) != *(delim + delimLen - i - 1)) {
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
-typedef struct {
-  uint8_t tx[UART_TX_BUF_SIZE];
-  BOOL isBusy;
-  UART_HandleTypeDef *huart;
-} UART_TxBuffer;
+/// @brief Try to read data until delim is found or timeout in blocking mode.
+/// Only call this on main thread.
+/// @param rxBuf Pointer to UART_RxBuffer struct
+/// @param out Output buffer
+/// @param len Max length to read. If delim is not found in len bytes, will
+/// cause the port to close.
+/// @param delim Delimiter
+/// @param timeout Timeout in ms. Set to 0 will cause the function to return
+/// immediately, even if no data is read. Set to -1 will cause the function to
+/// block forever until delim is found or len bytes are read.
+/// @return Number of bytes read into out.
+int UART_ReadUntil(UART_RxBuffer *rxBuf, char *out, int len, const char *delim,
+                   int timeout) {
+  if (rxBuf->isOpen == FALSE) {
+    return 0;
+  }
+  volatile UART_RxBuffer *buf = UART_GetRxBuffer(rxBuf->huart);
+  if (buf == NULL) {
+    return 0;
+  }
+  int received = 0;
+  int delimLen = strlen(delim);
+  while (buf->tail != buf->head && buf->isOpen) {
+    *out = buf->buf[buf->tail];
+    buf->tail = (buf->tail + 1) % UART_RX_BUF_SIZE;
+    received++;
+    if (check_delim_present(out, received, delim, delimLen)) {
+      return received;
+    }
+    out++;
+    if (received == len) {
+      UART_Close(rxBuf);
+      return received;
+    }
+  }
+  if (timeout == 0)
+    return received;
+  if (timeout < 0)
+    timeout = 0x3f3f3f3f;
+  int start = HAL_GetTick();
+  while (buf->isOpen && HAL_GetTick() - start < timeout) {
+    if (buf->tail != buf->head) {
+      *out = buf->buf[buf->tail];
+      buf->tail = (buf->tail + 1) % UART_RX_BUF_SIZE;
+      received++;
+      if (check_delim_present(out, received, delim, delimLen)) {
+        return received;
+      }
+      out++;
+    }
+    if (received == len) {
+      UART_Close(rxBuf);
+      return received;
+    }
+  }
+  return received;
+}
+/// @brief Get number of unread bytes in UART_RxBuffer.
+int UART_GetUnreadSize(UART_RxBuffer *rxBuf) {
+  if (rxBuf->isOpen == FALSE) {
+    return 0;
+  }
+  volatile UART_RxBuffer *buf = UART_GetRxBuffer(rxBuf->huart);
+  if (buf == NULL) {
+    return 0;
+  }
+  int size = buf->head - buf->tail;
+  if (size < 0) {
+    size += UART_RX_BUF_SIZE;
+  }
+  return size;
+}
+/// @brief Close UART port and stop receiving data
+void UART_Close(UART_RxBuffer *rxBuf) {
+  if (rxBuf->isOpen == FALSE) {
+    return;
+  }
+  rxBuf->isOpen = FALSE;
+#define CLEAR_UART_BUFFER_POINTER(port)                                        \
+  if (rxBuf->huart->Instance == port) {                                        \
+    port##RxBuffer = NULL;                                                     \
+  }
+  FOREACH_UART_PORT(CLEAR_UART_BUFFER_POINTER)
+}
 
-UART_TxBuffer UART_txBuf;
+void UART_SendHex(UART_HandleTypeDef *huart, uint8_t *buf, int len) {
+  HAL_UART_Transmit(huart, (uint8_t *)buf, len, 1000);
+}
+
 void UART_SendJson(UART_HandleTypeDef *huart, cJSON *json) {
   char *str = cJSON_PrintUnformatted(json);
   UART_SendString(huart, str);
@@ -108,26 +217,15 @@ void UART_SendJson(UART_HandleTypeDef *huart, cJSON *json) {
 }
 
 void UART_SendString(UART_HandleTypeDef *huart, const char *str) {
-  while (UART_txBuf.isBusy) {
-    // Wait for previous transmission to complete
-  }
-  UART_txBuf.huart = huart;
-  UART_txBuf.isBusy = TRUE;
   int len = strlen(str);
   HAL_UART_Transmit(huart, (uint8_t *)str, len, 1000);
-  UART_txBuf.isBusy = FALSE;
 }
 
+char UART_txBuf[UART_TX_BUF_SIZE];
 void UART_Printf(UART_HandleTypeDef *huart, const char *fmt, ...) {
-  while (UART_txBuf.isBusy) {
-    // Wait for previous transmission to complete
-  }
-  UART_txBuf.huart = huart;
-  UART_txBuf.isBusy = TRUE;
   va_list args;
   va_start(args, fmt);
-  vsnprintf(UART_txBuf.tx, UART_TX_BUF_SIZE, fmt, args);
+  vsnprintf(UART_txBuf, UART_TX_BUF_SIZE, fmt, args);
   va_end(args);
-  HAL_UART_Transmit(huart, UART_txBuf.tx, strlen(UART_txBuf.tx), 1000);
-  UART_txBuf.isBusy = FALSE;
+  HAL_UART_Transmit(huart, (uint8_t *)UART_txBuf, strlen(UART_txBuf), 1000);
 }
