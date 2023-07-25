@@ -38,6 +38,8 @@ extern TIM_HandleTypeDef htim3;
 
 extern TIM_HandleTypeDef htim4;
 
+extern TIM_HandleTypeDef htim5;
+
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN Private defines */
@@ -47,6 +49,7 @@ extern TIM_HandleTypeDef htim6;
 void MX_TIM2_Init(void);
 void MX_TIM3_Init(void);
 void MX_TIM4_Init(void);
+void MX_TIM5_Init(void);
 void MX_TIM6_Init(void);
 
 /* USER CODE BEGIN Prototypes */
@@ -71,6 +74,8 @@ void TIM_UnregisterCallback(TIM_HandleTypeDef *htim);
 void TIM_StartPeriodic(TIM_HandleTypeDef *htim, double sampleRate);
 // Stop the timer
 void TIM_StopPeriodic(TIM_HandleTypeDef *htim);
+
+double TIM_CountFrequencySync(TIM_HandleTypeDef *htim, int periodMs);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
@@ -78,3 +83,4 @@ void TIM_StopPeriodic(TIM_HandleTypeDef *htim);
 #endif
 
 #endif /* __TIM_H__ */
+

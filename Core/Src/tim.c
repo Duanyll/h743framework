@@ -27,6 +27,7 @@
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim5;
 TIM_HandleTypeDef htim6;
 
 /* TIM2 init function */
@@ -44,14 +45,17 @@ void MX_TIM2_Init(void) {
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_DOWN;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 4294967295;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK) {
     Error_Handler();
   }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE2;
+  sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_NONINVERTED;
+  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+  sClockSourceConfig.ClockFilter = 0;
   if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK) {
     Error_Handler();
   }
@@ -134,6 +138,41 @@ void MX_TIM4_Init(void) {
 
   /* USER CODE END TIM4_Init 2 */
 }
+/* TIM5 init function */
+void MX_TIM5_Init(void) {
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 0;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 4294967295;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK) {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK) {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
+}
 /* TIM6 init function */
 void MX_TIM6_Init(void) {
 
@@ -166,6 +205,7 @@ void MX_TIM6_Init(void) {
 
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle) {
 
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   if (tim_baseHandle->Instance == TIM2) {
     /* USER CODE BEGIN TIM2_MspInit 0 */
 
@@ -173,9 +213,17 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle) {
     /* TIM2 clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
 
-    /* TIM2 interrupt Init */
-    HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(TIM2_IRQn);
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    /**TIM2 GPIO Configuration
+    PA5     ------> TIM2_ETR
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
     /* USER CODE BEGIN TIM2_MspInit 1 */
 
     /* USER CODE END TIM2_MspInit 1 */
@@ -205,6 +253,15 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *tim_baseHandle) {
     /* USER CODE BEGIN TIM4_MspInit 1 */
 
     /* USER CODE END TIM4_MspInit 1 */
+  } else if (tim_baseHandle->Instance == TIM5) {
+    /* USER CODE BEGIN TIM5_MspInit 0 */
+
+    /* USER CODE END TIM5_MspInit 0 */
+    /* TIM5 clock enable */
+    __HAL_RCC_TIM5_CLK_ENABLE();
+    /* USER CODE BEGIN TIM5_MspInit 1 */
+
+    /* USER CODE END TIM5_MspInit 1 */
   } else if (tim_baseHandle->Instance == TIM6) {
     /* USER CODE BEGIN TIM6_MspInit 0 */
 
@@ -230,8 +287,11 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *tim_baseHandle) {
     /* Peripheral clock disable */
     __HAL_RCC_TIM2_CLK_DISABLE();
 
-    /* TIM2 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(TIM2_IRQn);
+    /**TIM2 GPIO Configuration
+    PA5     ------> TIM2_ETR
+    */
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_5);
+
     /* USER CODE BEGIN TIM2_MspDeInit 1 */
 
     /* USER CODE END TIM2_MspDeInit 1 */
@@ -259,6 +319,15 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *tim_baseHandle) {
     /* USER CODE BEGIN TIM4_MspDeInit 1 */
 
     /* USER CODE END TIM4_MspDeInit 1 */
+  } else if (tim_baseHandle->Instance == TIM5) {
+    /* USER CODE BEGIN TIM5_MspDeInit 0 */
+
+    /* USER CODE END TIM5_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __HAL_RCC_TIM5_CLK_DISABLE();
+    /* USER CODE BEGIN TIM5_MspDeInit 1 */
+
+    /* USER CODE END TIM5_MspDeInit 1 */
   } else if (tim_baseHandle->Instance == TIM6) {
     /* USER CODE BEGIN TIM6_MspDeInit 0 */
 
@@ -306,6 +375,7 @@ void TIM_DelayUs(uint32_t us) {
   _(TIM2)                                                                      \
   _(TIM3)                                                                      \
   _(TIM4)                                                                      \
+  _(TIM5)                                                                      \
   _(TIM6)
 
 #define DEFINE_TIM_CALLBACK(tim) TIM_Callback tim##_Callback;
@@ -360,5 +430,14 @@ void TIM_StartPeriodic(TIM_HandleTypeDef *htim, double sampleRate) {
   HAL_TIM_Base_Start_IT(htim);
 }
 void TIM_StopPeriodic(TIM_HandleTypeDef *htim) { HAL_TIM_Base_Stop_IT(htim); }
+
+double TIM_CountFrequencySync(TIM_HandleTypeDef *htim, int periodMs) {
+  __HAL_TIM_SetCounter(htim, 0);
+  HAL_TIM_Base_Start(htim);
+  HAL_Delay(periodMs);
+  HAL_TIM_Base_Stop(htim);
+  return (double)htim->Instance->CNT * (htim->Instance->PSC + 1) / periodMs *
+         1000;
+}
 
 /* USER CODE END 1 */

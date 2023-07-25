@@ -4,10 +4,7 @@
 #include "app.h"
 
 #include "ad7606b.h"
-#include "ad9959.h"
-#include "dac8830.h"
-#include "si5351.h"
-#include "ad9910.h"
+#include "hmc833.h"
 #include "keys.h"
 #include "nn.h"
 #include "screen.h"
@@ -16,6 +13,7 @@
 #include "usart.h"
 #include "tim.h"
 #include "dac.h"
+#include "retarget.h"
 
 UART_HandleTypeDef *computer;
 
@@ -62,6 +60,26 @@ void APP_InitAD7606B() {
   AD7606B_LeaveRegisterMode();
 }
 
+HMC833_Pins hmc833_pins;
+HMC833_Config hmc833_config;
+
+void APP_InitHMC833() {
+  hmc833_pins.LD_Port = GPIOB;
+  hmc833_pins.LD_Pin = GPIO_PIN_5;
+  hmc833_pins.SCK_Port = GPIOB;
+  hmc833_pins.SCK_Pin = GPIO_PIN_6;
+  hmc833_pins.SDI_Port = GPIOB;
+  hmc833_pins.SDI_Pin = GPIO_PIN_7;
+  hmc833_pins.SEN_Port = GPIOB;
+  hmc833_pins.SEN_Pin = GPIO_PIN_8;
+  hmc833_pins.CE_Port = GPIOB;
+  hmc833_pins.CE_Pin = GPIO_PIN_9;
+
+  HMC833_Init(&hmc833_pins);
+  HMC833_InitConfig(&hmc833_config);
+  HMC833_SetFrequency(&hmc833_config, 100e6);
+}
+
 #define AD_SAMPLE_COUNT 2048
 int16_t ad_data[AD_SAMPLE_COUNT * 4];
 
@@ -99,13 +117,18 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
     if (len >= 10)
       sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
-  } 
+  } else if (*data == '\x02') {
+    double freq = TIM_CountFrequencySync(&htim2, 100);
+    printf("Freq: %fMHz\n", freq / 1000000.0);
+  }
 }
 
 void APP_Init() {
   computer = &huart6;
+  RetargetInit(computer);
   UART_ResetHexRX(computer);
   APP_InitAD7606B();
+  APP_InitHMC833();
 }
 
 void APP_Loop() { UART_PollHexData(APP_HexCommandCallback); }

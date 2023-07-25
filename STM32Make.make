@@ -59,6 +59,7 @@ Drivers/Peripherals/ad9910.c \
 Drivers/Peripherals/ad9959.c \
 Drivers/Peripherals/adf4351.c \
 Drivers/Peripherals/dac8830.c \
+Drivers/Peripherals/hmc833.c \
 Drivers/Peripherals/pe43711.c \
 Drivers/Peripherals/screen.c \
 Drivers/Peripherals/si5351.c \
@@ -151,11 +152,10 @@ AS_DEFS =
 C_DEFS =  \
 -DAD7606C_ENABLE \
 -DAD9910_ENABLE \
--DAD9959_ENABLE \
 -DARM_MATH_CM7 \
 -DDAC8830_ENABLE \
+-DHMC833_ENABLE \
 -DSCREEN_USE_ADDT \
--DSI5351_ENABLE \
 -DSIGNAL_F32_ENABLE \
 -DSTM32H743xx \
 -DSWIIC_USE_OPEN_DRAIN \

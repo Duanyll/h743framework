@@ -54,3 +54,4 @@ uint16_t SPI_GetResampledOutput();
 #endif
 
 #endif /* __SPI_H__ */
+

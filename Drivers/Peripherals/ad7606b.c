@@ -11,7 +11,7 @@ static AD7606B_Pins *pins;
 #define LOW GPIO_PIN_RESET
 #define HIGH GPIO_PIN_SET
 #define WRITE(pin, value)                                                      \
-  HAL_GPIO_WritePin(pins->pin##_Port, pins->##pin##_Pin, (value) ? HIGH : LOW)
+  HAL_GPIO_WritePin(pins->pin##_Port, pins->pin##_Pin, (value) ? HIGH : LOW)
 
 volatile BOOL AD7606B_isSampling;
 volatile BOOL AD7606B_badSampleFlag;
@@ -206,6 +206,8 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
   AD7606B_isSampling = FALSE;
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
 }
+
+void AD7606B_TimerCallback();
 
 BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
                             double sampleRate) {

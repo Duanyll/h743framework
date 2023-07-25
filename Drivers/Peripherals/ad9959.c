@@ -10,7 +10,7 @@ static AD9959_Pins *pins;
 #define HIGH GPIO_PIN_SET
 #define LOW GPIO_PIN_RESET
 #define WRITE(name, val)                                                       \
-  HAL_GPIO_WritePin(pins->name##_Port, pins->##name##_Pin, (val) ? HIGH : LOW)
+  HAL_GPIO_WritePin(pins->name##_Port, pins->name##_Pin, (val) ? HIGH : LOW)
 
 // Delay at least 10ns
 void AD9959_Delay() {
@@ -181,7 +181,7 @@ uint16_t AD9959_CalculatePOW(double phase) {
 
 // Set frequency for AD9959 channel. Manual trigger IOUpdate to apply change.
 // Unit: Hz
-void AD9959_SetFrequency(AD9959_ChannelConfig *config) {
+void AD9959_SetFrequency(AD9959_ChannelConfig *config, double freq) {
   config->cftw0 = AD9959_CalculateFTW(freq);
   AD9959_Write(AD9959_CFTW0_ADDR, config->cftw0);
 }

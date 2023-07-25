@@ -76,6 +76,8 @@ int sine_wave_index;
 int sine_wave_step;
 int sine_wave_amplitude;
 
+void DAC8830_TimerCallback();
+
 void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude) {
   sine_wave_chip = pins;
   sine_wave_index = 0;
