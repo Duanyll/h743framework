@@ -4,6 +4,7 @@
 #include "app.h"
 
 #include "ad7606b.h"
+#include "pe43711.h"
 #include "keys.h"
 #include "nn.h"
 #include "retarget.h"
@@ -104,15 +105,47 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
   }
 }
 
-void APP_KeyCallback(uint8_t event) {
+double pe43711_atten = 0.0;
+double pe43711_delta = 0.0;
+PE43711_Pins pe43711_pins;
+void APP_InitPE43711() {
+  pe43711_pins.LE_Port = GPIOB;
+  pe43711_pins.LE_Pin = GPIO_PIN_5;
+  pe43711_pins.CLK_Port = GPIOB;
+  pe43711_pins.CLK_Pin = GPIO_PIN_6;
+  pe43711_pins.SI_Port = GPIOB;
+  pe43711_pins.SI_Pin = GPIO_PIN_7;
+  PE43711_Init(&pe43711_pins);
+}
+
+void APP_IncreaseKeyCallback(uint8_t event) {
   if (event == KEYS_EVENT_PRESS) {
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-  } else if (event == KEYS_EVENT_RELEASE) {
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+    pe43711_atten += 0.25;
   } else if (event == KEYS_EVENT_HOLD) {
-    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+    pe43711_delta = 0.01;
+  } else if (event == KEYS_EVENT_RELEASE) {
+    pe43711_delta = 0.0;
   }
+}
+
+void APP_DecreaseKeyCallback(uint8_t event) {
+  if (event == KEYS_EVENT_PRESS) {
+    pe43711_atten -= 0.25;
+  } else if (event == KEYS_EVENT_HOLD) {
+    pe43711_delta = -0.01;
+  } else if (event == KEYS_EVENT_RELEASE) {
+    pe43711_delta = 0.0;
+  }
+}
+
+void APP_UpdatePE43711() {
+  pe43711_atten += pe43711_delta;
+  if (pe43711_atten < 0.0) {
+    pe43711_atten = 0.0;
+  } else if (pe43711_atten > 31.75) {
+    pe43711_atten = 31.75;
+  }
+  PE43711_SetAttenuation(&pe43711_pins, pe43711_atten);
 }
 
 KEYS_Pins keys_pins;
@@ -120,16 +153,16 @@ void APP_InitKeys() {
   keys_pins.keyCount = 4;
   keys_pins.pins[0].port = SWITCH1_GPIO_Port;
   keys_pins.pins[0].pin = SWITCH1_Pin;
-  keys_pins.pins[0].callback = APP_KeyCallback;
+  keys_pins.pins[0].callback = APP_IncreaseKeyCallback;
   keys_pins.pins[1].port = SWITCH2_GPIO_Port;
   keys_pins.pins[1].pin = SWITCH2_Pin;
-  keys_pins.pins[1].callback = APP_KeyCallback;
+  keys_pins.pins[1].callback = APP_DecreaseKeyCallback;
   keys_pins.pins[2].port = SWITCH3_GPIO_Port;
   keys_pins.pins[2].pin = SWITCH3_Pin;
-  keys_pins.pins[2].callback = APP_KeyCallback;
+  keys_pins.pins[2].callback = NULL;
   keys_pins.pins[3].port = SWITCH4_GPIO_Port;
   keys_pins.pins[3].pin = SWITCH4_Pin;
-  keys_pins.pins[3].callback = APP_KeyCallback;
+  keys_pins.pins[3].callback = NULL;
   keys_pins.htim = &htim7;
 
   KEYS_Init(&keys_pins);
@@ -144,6 +177,7 @@ void APP_Init() {
   RetargetInit(computer);
   APP_InitAD7606B();
   APP_InitKeys();
+  APP_InitPE43711();
 
   UART_RxBuffer_Init(&computer_rx_buf, computer);
   computer_command_ptr = computer_command;
@@ -168,4 +202,5 @@ void APP_Loop() {
   }
 
   KEYS_Poll();
+  APP_UpdatePE43711();
 }
