@@ -39,15 +39,15 @@ int UART_Read(UART_RxBuffer *rxBuf, char *out, int len, int timeout);
 /// Only call this on main thread.
 /// @param rxBuf Pointer to UART_RxBuffer struct
 /// @param out Output buffer
-/// @param len Max length to read. If delim is not found in len bytes, will
-/// cause the port to close.
+/// @param len Max length to read.
 /// @param delim Delimiter
 /// @param timeout Timeout in ms. Set to 0 will cause the function to return
 /// immediately, even if no data is read. Set to -1 will cause the function to
 /// block forever until delim is found or len bytes are read.
-/// @return Number of bytes read into out.
-int UART_ReadUntil(UART_RxBuffer *rxBuf, char *out, int len, const char *delim,
-                   int timeout);
+/// @param readLen Number of bytes read into out.
+/// @return Whether delim is found.
+BOOL UART_ReadUntil(UART_RxBuffer *rxBuf, char *out, int len, const char *delim,
+                    int timeout, int *readLen);
 /// @brief Get number of unread bytes in UART_RxBuffer.
 int UART_GetUnreadSize(UART_RxBuffer *rxBuf);
 /// @brief Close UART port and stop receiving data

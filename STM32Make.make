@@ -42,6 +42,7 @@ Core/Src/dac.c \
 Core/Src/dma.c \
 Core/Src/gpio.c \
 Core/Src/main.c \
+Core/Src/power.c \
 Core/Src/spi.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \

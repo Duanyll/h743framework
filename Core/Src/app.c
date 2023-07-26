@@ -4,9 +4,10 @@
 #include "app.h"
 
 #include "ad7606b.h"
-#include "pe43711.h"
 #include "keys.h"
 #include "nn.h"
+#include "pe43711.h"
+#include "power.h"
 #include "retarget.h"
 #include "screen.h"
 #include "serial.h"
@@ -175,32 +176,43 @@ char *computer_command_ptr;
 void APP_Init() {
   computer = &huart6;
   RetargetInit(computer);
-  APP_InitAD7606B();
-  APP_InitKeys();
-  APP_InitPE43711();
+  // APP_InitAD7606B();
+  // APP_InitKeys();
+  // APP_InitPE43711();
 
-  UART_RxBuffer_Init(&computer_rx_buf, computer);
-  computer_command_ptr = computer_command;
-  UART_Open(&computer_rx_buf);
-  KEYS_Start();
+  // UART_RxBuffer_Init(&computer_rx_buf, computer);
+  // computer_command_ptr = computer_command;
+  // UART_Open(&computer_rx_buf);
+  // KEYS_Start();
 }
 
 void APP_Loop() {
-  int len = UART_ReadUntil(
-      &computer_rx_buf, computer_command_ptr,
-      computer_command + UART_RX_BUF_SIZE - computer_command_ptr, "\n", 1);
-  computer_command_ptr += len;
-  if (len > 0 && computer_command_ptr[-1] == '\n') {
-    APP_HexCommandCallback((uint8_t *)computer_command, len - 1);
-    computer_command_ptr = computer_command;
-  } else if (computer_rx_buf.isOpen == FALSE) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-    HAL_Delay(100);
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-    computer_command_ptr = computer_command;
-    UART_Open(&computer_rx_buf);
-  }
+  // int len = 0;
+  // BOOL ok =
+  //     UART_ReadUntil(&computer_rx_buf, computer_command_ptr,
+  //                    computer_command + UART_RX_BUF_SIZE - computer_command_ptr,
+  //                    "\n", 1, &len);
+  // computer_command_ptr += len;
+  // if (ok) {
+  //   APP_HexCommandCallback((uint8_t *)computer_command,
+  //                          computer_command_ptr - computer_command);
+  //   computer_command_ptr = computer_command;
+  // } else if (computer_rx_buf.isOpen == FALSE) {
+  //   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+  //   HAL_Delay(100);
+  //   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+  //   computer_command_ptr = computer_command;
+  //   UART_Open(&computer_rx_buf);
+  // }
 
-  KEYS_Poll();
-  APP_UpdatePE43711();
+  POWER_Use32MHzClocks();
+  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED1_Pin);
+  printf("Running at 32MHz!\n");
+  HAL_Delay(2000);
+  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED1_Pin);
+  POWER_Use400MHzClocks();
+  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED2_Pin);
+  printf("Running at 400MHz!\n");
+  HAL_Delay(2000);
+  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED2_Pin);
 }
