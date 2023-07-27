@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef ADF4351_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 /* ------------------------------- ADF4351 Pins ------------------------------
  */
@@ -34,6 +32,7 @@ typedef struct {
 #define ADF4351_RFOUT_MAX 4400.0e6
 #define ADF4351_RFOUTMIN 34.375e6
 #define ADF4351_REFINMAX 250.0e6
+#define ADF4351_REFIN 100.0e6
 
 /** \brief  Union type for the structure of Register0 in ADF4351
  */
@@ -343,5 +342,3 @@ ADF4351_RFDIV_t ADF4351_SelectOutputDivider(double RFoutFrequency);
 // If the frequency cannot be set exactly, try adjusting R Counter value.
 double ADF4351_SetFrequency(ADF4351_Config *config, double rfout, double refin,
                             double fresout);
-
-#endif

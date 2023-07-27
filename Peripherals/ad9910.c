@@ -1,6 +1,5 @@
-#ifdef AD9910_ENABLE
-
 #include "ad9910.h"
+
 #include <math.h>
 #include <stdio.h>
 
@@ -392,5 +391,3 @@ void AD9910_SetupSingleToneFM(AD9910_Config *cfg, double baseFreq,
   AD9910_WriteRam(AD9910_ramBuffer, L);
   AD9910_IOUpdate();
 }
-
-#endif

@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef LMX2572_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 // This driver is full of magic numbers.  I have no idea what they do, but they work.
 
@@ -24,5 +22,3 @@ void LMX2572_SendDataArray(uint32_t *a, uint32_t num);
 void LMX2572_Init(LMX2572_Pins *pins);
 
 void LMX2572_SetFrequency(uint32_t freq);
-
-#endif

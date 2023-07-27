@@ -24,9 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#ifdef SI5351_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 #include "swiic.h"
 
@@ -109,5 +107,3 @@ void SI5351_SetupPLL(SI5351_PLL_t pll, SI5351_PLLConfig_t *conf);
 int SI5351_SetupOutput(uint8_t output, SI5351_PLL_t pllSource,
                        SI5351_DriveStrength_t driveStength,
                        SI5351_OutputConfig_t *conf, uint8_t phaseOffset);
-
-#endif

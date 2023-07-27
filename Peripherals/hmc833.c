@@ -1,5 +1,3 @@
-#ifdef HMC833_ENABLE
-
 #include "hmc833.h"
 
 static HMC833_Pins *pins;
@@ -209,5 +207,3 @@ void HMC833_SetFrequency(HMC833_Config *config, double fOUT) {
 
   // FIXME: Registers are written successfully, but the output frequency is wrong
 }
-
-#endif

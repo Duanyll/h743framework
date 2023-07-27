@@ -20,7 +20,7 @@ void TIM_DelayUs(uint32_t us) {
 }
 
 #define DEFINE_TIM_CALLBACK(tim) TIM_Callback tim##_Callback;
-FOR_ALL_TIMERS(DEFINE_TIM_CALLBACK);
+ALL_TIMERS(DEFINE_TIM_CALLBACK);
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 #define CALL_IF_MATCH(tim)                                                     \
@@ -29,7 +29,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
       tim##_Callback();                                                        \
     }                                                                          \
   }
-  FOR_ALL_TIMERS(CALL_IF_MATCH);
+  ALL_TIMERS(CALL_IF_MATCH);
 }
 
 volatile int64_t TIM_usTimer;
@@ -54,14 +54,14 @@ void TIM_RegisterCallback(TIM_HandleTypeDef *htim, TIM_Callback callback) {
   if (htim->Instance == tim) {                                                 \
     tim##_Callback = callback;                                                 \
   }
-  FOR_ALL_TIMERS(SET_CALLBACK_IF_MATCH);
+  ALL_TIMERS(SET_CALLBACK_IF_MATCH);
 }
 void TIM_UnregisterCallback(TIM_HandleTypeDef *htim) {
 #define CLEAR_CALLBACK_IF_MATCH(tim)                                           \
   if (htim->Instance == tim) {                                                 \
     tim##_Callback = NULL;                                                     \
   }
-  FOR_ALL_TIMERS(CLEAR_CALLBACK_IF_MATCH);
+  ALL_TIMERS(CLEAR_CALLBACK_IF_MATCH);
 }
 void TIM_StartPeriodic(TIM_HandleTypeDef *htim, double sampleRate) {
   int period =

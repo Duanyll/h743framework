@@ -1,5 +1,3 @@
-#ifdef AD9834_ENABLE
-
 #include "ad9834.h"
 
 static AD9834_Pins *pins;
@@ -91,5 +89,3 @@ void AD9834_SetPhase(AD9834_Config *config, uint8_t reg, double phase) {
   config->phase[reg] &= 0x0FFF;
   AD9834_WritePhase(config, reg);
 }
-
-#endif

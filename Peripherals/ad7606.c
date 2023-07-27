@@ -1,5 +1,3 @@
-#ifdef AD7606_ENABLE
-
 #include "ad7606.h"
 
 #include <stdio.h>
@@ -47,7 +45,7 @@ void AD7606_Init(AD7606_Pins *p) {
   INIT(BUSY);
 #undef INIT
   
-  GPIO_InitStruct.Pins = 0xffff;
+  GPIO_InitStruct.Pin = 0xffff;
   HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 
   ad7606_config.range = AD_RANGE_5V;
@@ -166,6 +164,18 @@ void AD7606_Sample(uint16_t *output) {
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
 }
 
+void AD7606_TimerCallback() {
+  if (ad7606_isSampling) {
+    ad7606_badSampleFlag = TRUE;
+    return;
+  } else if (ad7606_sampleCount <= 0) {
+    return;
+  }
+  AD7606_Sample(ad7606_output);
+  ad7606_output += popcount(ad7606_config.channels);
+  ad7606_sampleCount--;
+}
+
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output) {
   TIM_RegisterCallback(pins->TIM_Handle, AD7606_TimerCallback);
   ad7606_sampleCount = count;
@@ -182,17 +192,3 @@ BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output) {
   }
   return !ad7606_badSampleFlag;
 }
-
-void AD7606_TimerCallback() {
-  if (ad7606_isSampling) {
-    ad7606_badSampleFlag = TRUE;
-    return;
-  } else if (ad7606_sampleCount <= 0) {
-    return;
-  }
-  AD7606_Sample(ad7606_output);
-  ad7606_output += popcount(ad7606_config.channels);
-  ad7606_sampleCount--;
-}
-
-#endif

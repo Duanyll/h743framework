@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef HMC833_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 typedef struct {
   GPIO_TypeDef *LD_Port;
@@ -137,5 +135,3 @@ void HMC833_InitConfig(HMC833_Config *config);
 void HMC833_SetFrequency(HMC833_Config *config, double fOUT);
 
 #define HMC833_FXTAL 50e6
-
-#endif

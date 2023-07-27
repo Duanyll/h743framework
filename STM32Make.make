@@ -49,20 +49,6 @@ Core/Src/stm32h7xx_it.c \
 Core/Src/system_stm32h7xx.c \
 Core/Src/tim.c \
 Core/Src/usart.c \
-Drivers/Peripherals/ad7606.c \
-Drivers/Peripherals/ad7606b.c \
-Drivers/Peripherals/ad9269.c \
-Drivers/Peripherals/ad9834.c \
-Drivers/Peripherals/ad9910.c \
-Drivers/Peripherals/ad9959.c \
-Drivers/Peripherals/adf4351.c \
-Drivers/Peripherals/dac8830.c \
-Drivers/Peripherals/hmc833.c \
-Drivers/Peripherals/lmx2572.c \
-Drivers/Peripherals/pe43711.c \
-Drivers/Peripherals/screen.c \
-Drivers/Peripherals/si5351.c \
-Drivers/Peripherals/swiic.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc_ex.c \
@@ -89,6 +75,20 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_tim_ex.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
+Peripherals/ad7606.c \
+Peripherals/ad7606b.c \
+Peripherals/ad9269.c \
+Peripherals/ad9834.c \
+Peripherals/ad9910.c \
+Peripherals/ad9959.c \
+Peripherals/adf4351.c \
+Peripherals/dac8830.c \
+Peripherals/hmc833.c \
+Peripherals/lmx2572.c \
+Peripherals/pe43711.c \
+Peripherals/screen.c \
+Peripherals/si5351.c \
+Peripherals/swiic.c \
 SignalNet/Src/graph.c \
 SignalNet/Src/lenet_params.c \
 SignalNet/Src/operators.c \
@@ -155,15 +155,8 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DAD7606C_ENABLE \
--DAD9910_ENABLE \
--DAD9959_ENABLE \
--DADF4351_ENABLE \
 -DARM_MATH_CM7 \
--DDAC8830_ENABLE \
 -DSCREEN_USE_ADDT \
--DSI5351_ENABLE \
--DSIGNAL_F32_ENABLE \
 -DSTM32H743xx \
 -DSWIIC_USE_OPEN_DRAIN \
 -DUSE_HAL_DRIVER
@@ -184,9 +177,9 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/DSP/Include/ \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
--IDrivers/Peripherals \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
+-IPeripherals \
 -ISignalNet/Inc/ \
 -IUtils
 

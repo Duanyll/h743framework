@@ -1,5 +1,3 @@
-#ifdef AD9269_ENABLE
-
 //
 // Created by RisingEntropy on 2023/7/14.
 //
@@ -133,5 +131,3 @@ void AD9269_ReadConfigFromDevice(AD9269 *device) {
   AD9269_ReadRegister(device, AD9269_REG_OUTPUT_MODE,
                   &device->Output_mode.raw_output_mode);
 }
-
-#endif

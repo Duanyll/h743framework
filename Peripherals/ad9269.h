@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef AD9269_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 #define AD9269_WRITE_SIGN 0
 #define AD9269_READ_SIGN 1
@@ -97,5 +95,3 @@ void AD9269_WriteRegister(AD9269 *device, uint8_t address, uint8_t data);
 void AD9269_ReadRegister(AD9269 *device, uint8_t address,
                      uint8_t *dst); // read one register
 void AD9269_ReadConfigFromDevice(AD9269 *device);
-
-#endif

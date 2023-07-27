@@ -3,19 +3,15 @@
 
 #include "serial.h"
 
-// TODO: Add enabled UART ports here
-#define FOREACH_UART_PORT(apply)                                               \
-  apply(USART1) apply(USART2) apply(USART3) apply(USART6)
-
 #define DEFINE_UART_BUFFER_POINTER(port) volatile UART_RxBuffer *port##RxBuffer;
-FOREACH_UART_PORT(DEFINE_UART_BUFFER_POINTER)
+ALL_UART_PORTS(DEFINE_UART_BUFFER_POINTER)
 
 volatile UART_RxBuffer *UART_GetRxBuffer(UART_HandleTypeDef *huart) {
 #define GET_UART_BUFFER_POINTER(port)                                          \
   if (huart->Instance == port) {                                               \
     return port##RxBuffer;                                                     \
   }
-  FOREACH_UART_PORT(GET_UART_BUFFER_POINTER)
+  ALL_UART_PORTS(GET_UART_BUFFER_POINTER)
   return NULL;
 }
 
@@ -58,7 +54,7 @@ BOOL UART_Open(UART_RxBuffer *rxBuf) {
     }                                                                          \
     port##RxBuffer = rxBuf;                                                    \
   }
-  FOREACH_UART_PORT(SET_UART_BUFFER_POINTER)
+  ALL_UART_PORTS(SET_UART_BUFFER_POINTER)
   rxBuf->head = 0;
   rxBuf->tail = 0;
   rxBuf->isOpen = TRUE;
@@ -126,7 +122,7 @@ static BOOL check_delim_present(char *out, int received, const char *delim,
 /// Only call this on main thread.
 /// @param rxBuf Pointer to UART_RxBuffer struct
 /// @param out Output buffer
-/// @param len Max length to read. 
+/// @param len Max length to read.
 /// @param delim Delimiter
 /// @param timeout Timeout in ms. Set to 0 will cause the function to return
 /// immediately, even if no data is read. Set to -1 will cause the function to
@@ -134,7 +130,7 @@ static BOOL check_delim_present(char *out, int received, const char *delim,
 /// @param readLen Number of bytes read into out.
 /// @return Whether delim is found.
 BOOL UART_ReadUntil(UART_RxBuffer *rxBuf, char *out, int len, const char *delim,
-                   int timeout, int* readLen) {
+                    int timeout, int *readLen) {
   if (rxBuf->isOpen == FALSE) {
     return 0;
   }
@@ -202,7 +198,37 @@ void UART_Close(UART_RxBuffer *rxBuf) {
   if (rxBuf->huart->Instance == port) {                                        \
     port##RxBuffer = NULL;                                                     \
   }
-  FOREACH_UART_PORT(CLEAR_UART_BUFFER_POINTER)
+  ALL_UART_PORTS(CLEAR_UART_BUFFER_POINTER)
+}
+
+static UART_RxBuffer computer_rx_buf;
+static char computer_command[UART_RX_BUF_SIZE];
+static char *computer_command_ptr;
+
+void UART_ListenCommands(UART_HandleTypeDef *huart, const char *delim) {
+  UART_RxBuffer_Init(&computer_rx_buf, huart);
+  computer_command_ptr = computer_command;
+  UART_Open(&computer_rx_buf);
+}
+void UART_PollCommands(void (*callback)(uint8_t *data, int len), int timeout) {
+  int len = 0;
+  BOOL ok =
+      UART_ReadUntil(&computer_rx_buf, computer_command_ptr,
+                     computer_command + UART_RX_BUF_SIZE - computer_command_ptr,
+                     "\n", 1, &len);
+  computer_command_ptr += len;
+  if (ok) {
+    APP_HexCommandCallback((uint8_t *)computer_command,
+                           computer_command_ptr - computer_command);
+    computer_command_ptr = computer_command;
+  } else if (computer_rx_buf.isOpen == FALSE ||
+             computer_command_ptr == computer_command + UART_RX_BUF_SIZE) {
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    HAL_Delay(100);
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    computer_command_ptr = computer_command;
+    UART_Open(&computer_rx_buf);
+  }
 }
 
 void UART_SendHex(UART_HandleTypeDef *huart, uint8_t *buf, int len) {

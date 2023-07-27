@@ -1,7 +1,6 @@
 #pragma once
-#include "main.h"
 
-#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
+#include "common.h"
 
 /* ------------------------------ AD7606B Pins ------------------------------ */
 // AD_7606B with parallel interface and software mode
@@ -69,9 +68,6 @@ typedef struct {
 #define AD7606B_REG_STATUS 0x01
 #define AD7606B_REG_CONFIG 0x02
 #define AD7606B_REG_RANGE 0x03
-#ifdef AD7606C_ENABLE
-#define AD7606C_REG_BANDWIDTH 0x07
-#endif
 #define AD7606B_REG_OVERSAMPLE 0x08
 #define AD7606B_REG_GAIN 0x09
 #define AD7606B_REG_OFFSET 0x11
@@ -94,24 +90,9 @@ typedef struct {
 #define AD7606B_OPMODE_AUTOSTANDBY 0x02
 #define AD7606B_OPMODE_SHUTDOWN 0x03
 
-#ifndef AD7606C_ENABLE
 #define AD7606B_RANGE_2V5 0x00
 #define AD7606B_RANGE_5V 0x01
-#define AD7606B_RANGE_10V 0x02
-#else
-#define AD7606C_RANGE_PM2V5 0x00
-#define AD7606C_RANGE_PM5V 0x01
-#define AD7606C_RANGE_PM6V25 0x02
-#define AD7606C_RANGE_PM10V 0x03
-#define AD7606C_RANGE_PM12V5 0x04
-#define AD7606C_RANGE_5V 0x05
-#define AD7606C_RANGE_10V 0x06
-#define AD7606C_RANGE_12V5 0x07
-#define AD7606C_RANGE_PM5V_DIFF 0x08
-#define AD7606C_RANGE_PM10V_DIFF 0x09
-#define AD7606C_RANGE_PM12V5_DIFF 0x0A
-#define AD7606C_RANGE_PM20V_DIFF 0x0B
-#endif
+#define AD7606B_RANGE_10V 0x03
 
 #define AD7606B_OVERSAMPLE_NO 0x00
 #define AD7606B_OVERSAMPLE_2 0x01
@@ -171,5 +152,3 @@ void AD7606B_SetOffset(AD7606B_Config *config, uint8_t channel,
 void AD7606B_SetPhase(AD7606B_Config *config, uint8_t channel, uint8_t phase);
 void AD7606B_SetDiagMux(AD7606B_Config *config, uint8_t channel,
                         uint8_t diag_mux);
-
-#endif

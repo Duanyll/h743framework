@@ -1,5 +1,3 @@
-#ifdef AD9959_ENABLE
-
 #include "ad9959.h"
 
 #include "timers.h"
@@ -202,5 +200,3 @@ void AD9959_SelectChannels(AD9959_GlobalConfig *config, uint8_t channels) {
   config->csr.raw = (config->csr.raw & 0x0F) | ((channels & 0xF) << 4);
   AD9959_Write(AD9959_CSR_ADDR, config->csr.raw);
 }
-
-#endif

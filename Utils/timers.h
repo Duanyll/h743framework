@@ -1,17 +1,10 @@
 #pragma once
 
+#include "utils_config.h"
+
 #include "main.h"
 #include "tim.h"
 
-// TODO: Add enabled timers here
-#define FOR_ALL_TIMERS(_)                                                      \
-  _(TIM2)                                                                      \
-  _(TIM3)                                                                      \
-  _(TIM4)                                                                      \
-  _(TIM5)                                                                      \
-  _(TIM6)                                                                      \
-  _(TIM7)                                                                      
-  
 // Delay in microseconds with SysTick
 void TIM_DelayUs(uint32_t us);
 

@@ -3,7 +3,7 @@
 
 #include "app.h"
 
-#include "ad7606b.h"
+#include "ad7606c.h"
 #include "adf4351.h"
 #include "ad9910.h"
 #include "si5351.h"
@@ -163,10 +163,6 @@ void APP_InitKeys() {
   KEYS_Init(&keys_pins);
 }
 
-UART_RxBuffer computer_rx_buf;
-char computer_command[UART_RX_BUF_SIZE];
-char *computer_command_ptr;
-
 void APP_Init() {
   POWER_Use400MHzClocks();
   computer = &huart6;
@@ -176,30 +172,11 @@ void APP_Init() {
   APP_InitAD9959();
   // APP_InitSI5351();
 
-  // UART_RxBuffer_Init(&computer_rx_buf, computer);
-  // computer_command_ptr = computer_command;
-  // UART_Open(&computer_rx_buf);
   // KEYS_Start();
 }
 
 void APP_Loop() {
-  // int len = 0;
-  // BOOL ok =
-  //     UART_ReadUntil(&computer_rx_buf, computer_command_ptr,
-  //                    computer_command + UART_RX_BUF_SIZE - computer_command_ptr,
-  //                    "\n", 1, &len);
-  // computer_command_ptr += len;
-  // if (ok) {
-  //   APP_HexCommandCallback((uint8_t *)computer_command,
-  //                          computer_command_ptr - computer_command);
-  //   computer_command_ptr = computer_command;
-  // } else if (computer_rx_buf.isOpen == FALSE) {
-  //   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-  //   HAL_Delay(100);
-  //   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-  //   computer_command_ptr = computer_command;
-  //   UART_Open(&computer_rx_buf);
-  // }
+  // UART_PollCommands(1, APP_HexCommandCallback);
   AD7606B_CollectSamples(ad_data, 0x01, 1024, 20e3);
   HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 }

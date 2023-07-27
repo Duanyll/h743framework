@@ -1,5 +1,3 @@
-#ifdef ADF4351_ENABLE
-
 #include "adf4351.h"
 
 #include <math.h>
@@ -145,9 +143,9 @@ R is the RF reference division factor (1 to 1023).
 T is the reference divide-by-2 bit (0 or 1).
 */
 
-double ADF4351_SetFrequency(ADF4351_Config *config, double rfout, double refin,
+double ADF4351_SetFrequency(ADF4351_Config *config, double rfout,
                             double fresout) {
-  double fpfd = refin * (1 + config->reg2.RMul2) /
+  double fpfd = ADF4351_REFIN * (1 + config->reg2.RMul2) /
                 (config->reg2.RCountVal * (1 + config->reg2.RDiv2));
   ADF4351_REFDIV_t rdiv = ADF4351_SelectOutputDivider(rfout);
   double fvco = rfout * (1 << rdiv);
@@ -155,7 +153,7 @@ double ADF4351_SetFrequency(ADF4351_Config *config, double rfout, double refin,
 
   // MOD satifies 1 / MOD * fpfd / rfdiv == fresout
   // MOD == fpfd / (rfdiv * fresout)
-  uint32_t MOD = (uint32_t)round(refin / (rdiv * fresout));
+  uint32_t MOD = (uint32_t)round(ADF4351_REFIN / (rdiv * fresout));
   // MOD must be between 2 and 4095
   if (MOD < 2)
     MOD = 2;
@@ -192,5 +190,3 @@ double ADF4351_SetFrequency(ADF4351_Config *config, double rfout, double refin,
 
   return actual;
 }
-
-#endif

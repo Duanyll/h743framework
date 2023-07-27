@@ -1,11 +1,8 @@
 #pragma once
 
 #include "main.h"
+#include "utils_config.h"
 
-#define KEYS_MAX_KEYS 8
-#define KEYS_SAMPLE_RATE 100
-#define KEYS_HOLD_COUNT 10
-#define KEYS_LONG_HOLD_COUNT 100
 #define KEYS_EVENT_QUEUE_SIZE 16
 
 #define KEYS_EVENT_PRESS 1

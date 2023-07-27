@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef AD7606_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 /* ------------------------------- AD7606 Pins ------------------------------ */
 // Use parallel interface. The following pins are used:
@@ -101,5 +99,3 @@ void AD7606_Sample(uint16_t *output);
 // operation is successful. Only save enabled channels into output in
 // interleaved format.
 BOOL AD7606_CollectSamples(int count, int sampleRate, int16_t *output);
-
-#endif

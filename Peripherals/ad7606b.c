@@ -1,5 +1,3 @@
-#if defined(AD7606B_ENABLE) || defined(AD7606C_ENABLE)
-
 #include "ad7606b.h"
 
 #include <math.h>
@@ -312,5 +310,3 @@ void AD7606B_SetDiagMux(AD7606B_Config *config, uint8_t channel,
   config->raw[reg] |= (diag_mux << shift);
   AD7606B_ParallelRegisterWrite(reg, config->raw[reg]);
 }
-
-#endif

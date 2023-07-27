@@ -1,0 +1,21 @@
+#pragma once
+
+#include "ad7606b.h"
+
+// AD7606C has same pinout and register map as AD7606B. Use AD7606B driver.
+// AD7606C specific options are defined below.
+
+#define AD7606C_REG_BANDWIDTH 0x07
+
+#define AD7606C_RANGE_PM2V5 0x00
+#define AD7606C_RANGE_PM5V 0x01
+#define AD7606C_RANGE_PM6V25 0x02
+#define AD7606C_RANGE_PM10V 0x03
+#define AD7606C_RANGE_PM12V5 0x04
+#define AD7606C_RANGE_5V 0x05
+#define AD7606C_RANGE_10V 0x06
+#define AD7606C_RANGE_12V5 0x07
+#define AD7606C_RANGE_PM5V_DIFF 0x08
+#define AD7606C_RANGE_PM10V_DIFF 0x09
+#define AD7606C_RANGE_PM12V5_DIFF 0x0A
+#define AD7606C_RANGE_PM20V_DIFF 0x0B

@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef DAC8830_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 /* ------------------------------- DAC8830 Pins ------------------------------ */
 // For dual DAC8830 sharing the same SPI bus
@@ -33,5 +31,3 @@ void DAC8830_SetVoltage(DAC8830_Pins *pins, uint16_t voltage);
 
 void DAC8830_StartSineWave(DAC8830_Pins *pins, int frequency, int amplitude);
 void DAC8830_StopSineWave(DAC8830_Pins *pins);
-
-#endif

@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifdef SI5351_ENABLE
-
 #include "si5351.h"
 #include <stdio.h>
 
@@ -413,5 +411,3 @@ void SI5351_writeBulk(uint8_t baseaddr, int32_t P1, int32_t P2, int32_t P3,
   SI5351_write(baseaddr + 6, (P2 >> 8) & 0xFF);
   SI5351_write(baseaddr + 7, P2 & 0xFF);
 }
-
-#endif

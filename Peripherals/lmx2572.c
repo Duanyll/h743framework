@@ -1,5 +1,3 @@
-#ifdef LMX2572_ENABLE
-
 #include "lmx2572.h"
 #include "timers.h"
 
@@ -1133,5 +1131,3 @@ void LMX2572_SetFrequency(uint32_t freq) {
 
   HAL_Delay(99);
 }
-
-#endif

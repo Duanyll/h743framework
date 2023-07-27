@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef AD9910_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 typedef union {
   struct {
@@ -292,5 +290,3 @@ void AD9910_SetupSingleToneAM(AD9910_Config *cfg, double baseFreq,
                               uint16_t fullAmp);
 void AD9910_SetupSingleToneFM(AD9910_Config *config, double baseFreq,
                               double modFreq, double freqDev, uint16_t amp);
-
-#endif

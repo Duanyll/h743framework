@@ -21,14 +21,7 @@ ldscript: STM32H743VITx_FLASH.ld # linker script
 
 # Compiler definitions. The -D prefix for the compiler will be automatically added.
 cDefinitions: 
-  - AD7606C_ENABLE
-  - DAC8830_ENABLE
-  - ADF4351_ENABLE
-  - SI5351_ENABLE
-  - AD9910_ENABLE
-  - AD9959_ENABLE
   - ARM_MATH_CM7
-  - SIGNAL_F32_ENABLE
   - SCREEN_USE_ADDT
   - SWIIC_USE_OPEN_DRAIN
 cxxDefinitions: []
@@ -90,7 +83,7 @@ includeDirectories:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
-  - Drivers/Peripherals/**
+  - Peripherals/**
   - Drivers/CMSIS/DSP/Include/
   - SignalNet/Inc/
   - Utils/**
@@ -105,7 +98,7 @@ sourceFiles:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
-  - Drivers/Peripherals/**/*.c
+  - Peripherals/**/*.c
   - SignalNet/Src/*.c
   - Utils/*.c
 

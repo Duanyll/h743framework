@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef AD9834_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 /* ------------------------------- AD9834 Pins ------------------------------ */
 // DDS_SDA
@@ -52,7 +50,7 @@ typedef struct AD9834_Config {
 } AD9834_Config;
 
 // Init AD9834 device
-void AD9834_Init(void);
+void AD9834_Init(AD9834_Pins *p);
 void AD9834_WriteRaw(uint16_t data);
 // Init AD9834_Config structure
 void AD9834_InitConfig(AD9834_Config *config);
@@ -68,5 +66,3 @@ void AD9834_SetFreq(AD9834_Config *config, uint8_t reg, double freq,
                     double mclk);
 // Set phase in degrees. It calls AD9834_WritePhase() to apply changes.
 void AD9834_SetPhase(AD9834_Config *config, uint8_t reg, double phase);
-
-#endif

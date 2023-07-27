@@ -1,8 +1,6 @@
 #pragma once
 
-#ifdef AD9959_ENABLE
-
-#include "main.h"
+#include "common.h"
 
 /* ------------------------------- AD9959 Pins ------------------------------ */
 // DDS_SDIO0
@@ -202,5 +200,3 @@ void AD9959_SetAmplitude(AD9959_ChannelConfig *config, uint16_t amplitude);
 #define AD9959_CHANNEL_2 0x04
 #define AD9959_CHANNEL_3 0x08
 void AD9959_SelectChannels(AD9959_GlobalConfig *config, uint8_t channels);
-
-#endif

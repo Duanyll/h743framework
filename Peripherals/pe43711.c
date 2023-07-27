@@ -1,5 +1,3 @@
-#ifdef PE43711_ENABLE
-
 #include <math.h>
 
 #include "pe43711.h"
@@ -48,5 +46,3 @@ void PE43711_SetAttenuation(PE43711_Pins *pins, double attenuation) {
   data = data > 0x7F ? 0x7F : data;
   PE43711_Write(pins, data);
 }
-
-#endif
