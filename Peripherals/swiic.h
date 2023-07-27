@@ -1,7 +1,7 @@
 #pragma once
 
 #include "main.h"
-
+#include "common.h"
 typedef struct SWIIC_Config {
   GPIO_TypeDef *SDA_Port;
   uint16_t SDA_Pin;

@@ -48,22 +48,22 @@ void AD9959_Reset(AD9959_GlobalConfig *config) {
 
 void AD9959_SetSDIO0Input() {
   GPIO_InitTypeDef GPIO_InitStruct = {
-      .Pin = AD9959_SDIO0_Pin,
+      .Pin = pins->SDIO0_Pin,
       .Mode = GPIO_MODE_INPUT,
       .Pull = GPIO_NOPULL,
       .Speed = GPIO_SPEED_FREQ_HIGH,
   };
-  HAL_GPIO_Init(AD9959_SDIO0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(pins->SDIO0_Port, &GPIO_InitStruct);
 }
 
 void AD9959_SetSDIO0Output() {
   GPIO_InitTypeDef GPIO_InitStruct = {
-      .Pin = AD9959_SDIO0_Pin,
+      .Pin = pins->SDIO0_Pin,
       .Mode = GPIO_MODE_OUTPUT_PP,
       .Pull = GPIO_NOPULL,
       .Speed = GPIO_SPEED_FREQ_HIGH,
   };
-  HAL_GPIO_Init(AD9959_SDIO0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(pins->SDIO0_Port, &GPIO_InitStruct);
 }
 
 void AD9959_WriteRaw(uint8_t data) {
@@ -86,7 +86,7 @@ uint8_t AD9959_ReadRaw() {
   for (int i = 7; i >= 0; i--) {
     WRITE(SCLK, LOW);
     AD9959_Delay();
-    data |= HAL_GPIO_ReadPin(AD9959_SDIO0_GPIO_Port, AD9959_SDIO0_Pin) << i;
+    data |= HAL_GPIO_ReadPin(pins->SDIO0_Port, pins->SDIO0_Pin) << i;
     WRITE(SCLK, HIGH);
     AD9959_Delay();
   }

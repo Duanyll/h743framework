@@ -6,7 +6,7 @@ void SWIIC_Init(SWIIC_Config *config) {
   GPIO_InitTypeDef GPIO_InitStruct = {
       .Mode = GPIO_MODE_OUTPUT_OD,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_VERY_HIGH,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
   };
   GPIO_InitStruct.Pin = config->SDA_Pin;
   HAL_GPIO_Init(config->SDA_Port, &GPIO_InitStruct);
@@ -16,7 +16,7 @@ void SWIIC_Init(SWIIC_Config *config) {
   GPIO_InitTypeDef GPIO_InitStruct = {
       .Mode = GPIO_MODE_OUTPUT_PP,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_VERY_HIGH,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
   };
   GPIO_InitStruct.Pin = config->SDA_Pin;
   HAL_GPIO_Init(config->SDA_Port, &GPIO_InitStruct);
@@ -34,7 +34,7 @@ void SWIIC_Init(SWIIC_Config *config) {
     GPIO_InitTypeDef GPIO_InitStruct = {                                       \
         .Mode = GPIO_MODE_INPUT,                                               \
         .Pull = GPIO_NOPULL,                                                   \
-        .Speed = GPIO_SPEED_FREQ_VERY_HIGH,                                    \
+        .Speed = GPIO_SPEED_FREQ_HIGH,                                         \
         .Pin = config->SDA_Pin,                                                \
     };                                                                         \
     HAL_GPIO_Init(config->SDA_Port, &GPIO_InitStruct);                         \
@@ -44,7 +44,7 @@ void SWIIC_Init(SWIIC_Config *config) {
     GPIO_InitTypeDef GPIO_InitStruct = {                                       \
         .Mode = GPIO_MODE_OUTPUT_PP,                                           \
         .Pull = GPIO_NOPULL,                                                   \
-        .Speed = GPIO_SPEED_FREQ_VERY_HIGH,                                    \
+        .Speed = GPIO_SPEED_FREQ_HIGH,                                         \
         .Pin = config->SDA_Pin,                                                \
     };                                                                         \
     HAL_GPIO_Init(config->SDA_Port, &GPIO_InitStruct);                         \

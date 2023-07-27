@@ -6,7 +6,7 @@
 
 #include <sys/stat.h>
 
-#include "stm32h7xx_hal.h"
+#include "main.h"
 
 void RetargetInit(UART_HandleTypeDef* huart);
 int _isatty(int fd);

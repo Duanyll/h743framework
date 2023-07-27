@@ -165,7 +165,6 @@ void AD7606B_LeaveRegisterMode() {
 }
 
 void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
-  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
   AD7606B_isSampling = TRUE;
   WRITE(CS, LOW);
   WRITE(CONVST, LOW);
@@ -179,7 +178,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
     }
     AD7606B_SampleCallback(lastSample);
   }
-  while (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == GPIO_PIN_SET)
+  while (HAL_GPIO_ReadPin(pins->BUSY_Port, pins->BUSY_Pin) == GPIO_PIN_SET)
     ;
   AD7606B_Delay();
   for (int i = 0; i < 8; i++) {
@@ -195,7 +194,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
   WRITE(CS, HIGH);
   AD7606B_Delay();
   AD7606B_isSampling = FALSE;
-  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
 }
 
 void AD7606B_TimerCallback();

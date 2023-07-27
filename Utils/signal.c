@@ -1,6 +1,9 @@
-#include "arm_math.h"
-
 #include "signal.h"
+
+#if defined(ARM_MATH_CM3) || defined(ARM_MATH_CM4) || defined(ARM_MATH_CM7) || \
+    defined(ARM_MATH_CM0) || defined(ARM_MATH_CM0PLUS)
+
+#include "arm_math.h"
 
 void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
                        double sampleRate, SIGNAL_FFTBufferQ15 *buffer) {
@@ -75,6 +78,8 @@ void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
   SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer);
 }
 
+#endif
+
 void SIGNAL_FindPeaksF32(SIGNAL_SpectrumF32 *freqData, SIGNAL_PeaksF32 *peaks,
                          float height, int distance) {
   peaks->count = 0;
@@ -117,8 +122,6 @@ double SIGNAL_GetCorrelationF32(const float *x, const float *y, int n) {
       sqrt(n * sumX2 - sumX * sumX) * sqrt(n * sumY2 - sumY * sumY);
   return numerator / denominator;
 }
-
-#define M_PI 3.14159265358979323846
 
 void SIGNAL_UnwrapPhaseF32(float *phase, int n) {
   float last = phase[0];

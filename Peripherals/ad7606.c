@@ -115,13 +115,6 @@ int AD7606_SetConfig(AD7606_Config *config) {
   return 0;
 }
 
-static uint32_t bitwise_reverse(uint8_t x) {
-  // Reverse the bits in a byte
-  return ((x & 0x01) << 7) | ((x & 0x02) << 5) | ((x & 0x04) << 3) |
-         ((x & 0x08) << 1) | ((x & 0x10) >> 1) | ((x & 0x20) >> 3) |
-         ((x & 0x40) >> 5) | ((x & 0x80) >> 7);
-}
-
 static int popcount(uint32_t x) {
   // Count the number of bits set in a 32-bit integer
   int count = 0;
@@ -134,7 +127,7 @@ static int popcount(uint32_t x) {
 
 void AD7606_Sample(uint16_t *output) {
   ad7606_isSampling = TRUE;
-  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
+  // HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
   AD_WRITE(CONVSTA, LOW);
   AD7606_Delay(50);
   AD_WRITE(CONVSTA, HIGH);
@@ -142,26 +135,24 @@ void AD7606_Sample(uint16_t *output) {
   AD7606_Delay(50);
   AD_WRITE(CONVSTB, HIGH);
   AD7606_Delay(100);
-  if (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == LOW) {
-    printf("Conversion not started\n");
-    HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, HIGH);
-  }
   // Wait for BUSY to go low
-  while (HAL_GPIO_ReadPin(AD_BUSY_GPIO_Port, AD_BUSY_Pin) == HIGH)
+  while (HAL_GPIO_ReadPin(pins->BUSY_Port, pins->BUSY_Pin) == HIGH)
     ;
   AD7606_Delay(50);
   for (int i = 0; i < 8; i++) {
-    HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, LOW);
+    AD_WRITE(CS, LOW);
+    AD_WRITE(RD, LOW);
     AD7606_Delay(50);
     if (ad7606_config.channels & (1 << i)) {
       *output = pins->DB_Port->IDR;
       output++;
     }
-    HAL_GPIO_WritePin(AD_CS_GPIO_Port, AD_CS_Pin | AD_RD_Pin, HIGH);
+    AD_WRITE(RD, HIGH);
+    AD_WRITE(CS, HIGH);
     AD7606_Delay(50);
   }
   ad7606_isSampling = FALSE;
-  HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
+  // HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, LOW);
 }
 
 void AD7606_TimerCallback() {

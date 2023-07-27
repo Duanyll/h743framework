@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "utils_config.h"
+#include "common.h"
 
 #define KEYS_EVENT_QUEUE_SIZE 16
 

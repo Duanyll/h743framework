@@ -218,8 +218,8 @@ void UART_PollCommands(void (*callback)(uint8_t *data, int len), int timeout) {
                      "\n", 1, &len);
   computer_command_ptr += len;
   if (ok) {
-    APP_HexCommandCallback((uint8_t *)computer_command,
-                           computer_command_ptr - computer_command);
+    callback((uint8_t *)computer_command,
+             computer_command_ptr - computer_command);
     computer_command_ptr = computer_command;
   } else if (computer_rx_buf.isOpen == FALSE ||
              computer_command_ptr == computer_command + UART_RX_BUF_SIZE) {

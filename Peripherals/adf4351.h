@@ -340,5 +340,5 @@ ADF4351_RFDIV_t ADF4351_SelectOutputDivider(double RFoutFrequency);
 // Set the config structure to a given frequency. Returns the actual frequency.
 // After this call ADF4351_WriteConfig() to apply the settings to the device.
 // If the frequency cannot be set exactly, try adjusting R Counter value.
-double ADF4351_SetFrequency(ADF4351_Config *config, double rfout, double refin,
+double ADF4351_SetFrequency(ADF4351_Config *config, double rfout,
                             double fresout);

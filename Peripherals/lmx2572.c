@@ -53,6 +53,10 @@ void LMX2572_Init(LMX2572_Pins *p) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
+// Suppress -Wunknown-pragmas
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+
 static uint32_t R[126];
 static double Frequencyout = 0;
 static uint32_t Ref = 0;
@@ -1116,6 +1120,7 @@ void LMX2572_RegisterData(double Freqout, double Space, uint8_t power) {
 
 #pragma endregion
 
+#pragma GCC diagnostic pop
 #pragma GCC diagnostic pop
 
 void LMX2572_SetFrequency(uint32_t freq) {

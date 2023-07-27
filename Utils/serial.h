@@ -6,6 +6,7 @@
 #include "main.h"
 #include "utils_config.h"
 #include "usart.h"
+#include "common.h"
 
 typedef struct {
   UART_HandleTypeDef *huart;
