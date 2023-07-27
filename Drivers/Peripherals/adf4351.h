@@ -30,6 +30,11 @@ typedef struct {
   uint16_t CE_Pin;
 } ADF4351_Pins;
 
+#define ADF5451_PFD_MAX 32.0e6
+#define ADF4351_RFOUT_MAX 4400.0e6
+#define ADF4351_RFOUTMIN 34.375e6
+#define ADF4351_REFINMAX 250.0e6
+
 /** \brief  Union type for the structure of Register0 in ADF4351
  */
 typedef union {
@@ -49,7 +54,8 @@ typedef union {
   struct {
     uint32_t ControlBits : 3; /*!< bit:  0.. 2 	CONTROL BITS */
     uint32_t ModVal : 12;     /*!< bit:  3..14 	12-BIT MODULUS VALUE (MOD) */
-    uint32_t PhaseVal : 12;   /*!< bit: 15..26 	12-BIT PHASE VALUE (PHASE) */
+    uint32_t PhaseVal : 12;   /*!< bit: 15..26 	12-BIT PHASE VALUE
+                                 (PHASE) */
     uint32_t Prescaler : 1;   /*!< bit:  27		 	PRESCALER */
     uint32_t PhaseAdjust : 1; /*!< bit:  28		 	PHASE ADJUST */
     uint32_t _reserved_0 : 3; /*!< bit: 29..31 	RESERVED */
@@ -64,23 +70,22 @@ typedef union {
     uint32_t ControlBits : 3;   /*!< bit:  0.. 2 	CONTROL BITS */
     uint32_t CounterReset : 1;  /*!< bit:  3 		 	Counter Reset */
     uint32_t CPTristate : 1;    /*!< bit:  4 		 	Charge Pump
-                                   Three-State */
+                                 * Three-State
+                                 */
     uint32_t PowerDown : 1;     /*!< bit:  5 		 	Power-Down */
-    uint32_t PhasePolarity : 1; /*!< bit:  6 		 	Phase Detector
-                                 * Polarity
-                                 */
-    uint32_t LockPrecision : 1; /*!< bit:  7 		 	Lock Detect
-                                 * Precision
-                                 */
-    uint32_t LockFunction : 1;  /*!< bit:  8 		 	Lock Detect
-                                 * Function
-                                 */
-    uint32_t CPCurrent : 4;     /*!< bit:  9..12 	Charge Pump Current Setting */
-    uint32_t DoubleBuffer : 1;  /*!< bit:  13		 	Double Buffer */
-    uint32_t RCountVal : 10;    /*!< bit: 14..23 	10-Bit R Counter */
-    uint32_t RDiv2 : 1;         /*!< bit: 24		 	Double Buffer */
-    uint32_t RMul2 : 1;         /*!< bit: 25		 	Double Buffer */
-    uint32_t MuxOut : 3;        /*!< bit: 26..28 	MUXOUT */
+    uint32_t PhasePolarity : 1; /*!< bit:  6 		 	Phase
+                                   Detector Polarity */
+    uint32_t LockPrecision : 1; /*!< bit:  7 		 	Lock
+                                   Detect Precision */
+    uint32_t
+        LockFunction : 1;      /*!< bit:  8 		 	Lock Detect Function
+                                */
+    uint32_t CPCurrent : 4;    /*!< bit:  9..12 	Charge Pump Current Setting */
+    uint32_t DoubleBuffer : 1; /*!< bit:  13		 	Double Buffer */
+    uint32_t RCountVal : 10;   /*!< bit: 14..23 	10-Bit R Counter */
+    uint32_t RDiv2 : 1;        /*!< bit: 24		 	Double Buffer */
+    uint32_t RMul2 : 1;        /*!< bit: 25		 	Double Buffer */
+    uint32_t MuxOut : 3;       /*!< bit: 26..28 	MUXOUT */
     uint32_t LowNoiseSpur : 2; /*!< bit: 29..30	Low Noise and Low Spur Modes  */
     uint32_t _reserved_0 : 1;  /*!< bit: 31			RESERVED  */
   };
@@ -117,8 +122,8 @@ typedef union {
     uint32_t AuxSel : 1;       /*!< bit:  9 	AUX Output Select */
     uint32_t Mtld : 1;         /*!< bit: 10 	Mute Till Lock Detect (MTLD) */
     uint32_t VcoPowerDown : 1; /*!< bit: 11 	VCO Power-Down */
-    uint32_t BandClkDiv : 8;   /*!< bit: 12..19 	Band Select Clock
-                                  Divider   Value */
+    uint32_t BandClkDiv : 8;   /*!< bit: 12..19 	Band Select Clock Divider Value
+                                */
     uint32_t RfDivSel : 3;     /*!< bit: 20..22 	RF Divider Select */
     uint32_t Feedback : 1;     /*!< bit: 23 	 Feedback Select */
     uint32_t _reserved_0 : 8;  /*!< bit: 24..31 RESERVED */
@@ -184,7 +189,7 @@ typedef enum {
 /** \brief Disable/Enable  type
  *  	various bits are Disable(0)/Enable(1) type
  */
-typedef enum { ADF4351_DISABLE, ADF4351_ENABLE } ADF4351_ED_t;
+typedef enum { ADF4351_OFF, ADF4351_ON } ADF4351_ED_t;
 
 /** \brief Charge Pump Current Setting  type
  *  	This value should be set to the charge pump current
@@ -311,23 +316,6 @@ typedef enum {
   ADF4351_LD_PIN_HIGH
 } ADF4351_LD_PIN_t;
 
-/** \brief  ADF4351 Driver Error codes
- */
-typedef enum {
-  ADF4351_Err_None,                 /// No error
-  ADF4351_Err_PFD,                  /// PFD max error check
-  ADF4351_Err_BandSelFreqTooHigh,   /// Band select frequency too high
-  ADF4351_Err_InvalidRCounterValue, /// Invalid R couinter value
-  ADF4351_Err_NoGCD_PhaseAdj,       /// No GCD when Phase adjust enabled
-  ADF4351_Err_RFoutTooHigh,         /// Output frequency too high
-  ADF4351_Err_RFoutTooLow,          /// Output frequency too low
-  ADF4351_Err_REFinTooHigh,         /// Reference input too high
-  ADF4351_Err_InvalidN,             /// N out of range
-  ADF4351_Err_InvalidMOD,           /// MOD out of range
-  ADF4351_Warn_NotTuned, /// PLL output could not be tuned to exact frequency
-  ADF4351_Err_InvalidMODLowSpur, /// Min. MOD in low spur mode is 50
-} ADF4351_ERR_t;
-
 typedef struct ADF4351_Config {
   ADF4351_Reg0_t reg0;
   ADF4351_Reg1_t reg1;
@@ -345,11 +333,6 @@ void ADF4351_WriteRaw(uint32_t data);
 void ADF4351_InitConfig(ADF4351_Config *config);
 // Write the ADF4351 config structure to the device
 void ADF4351_WriteConfig(ADF4351_Config *config);
-
-#define ADF5451_PFD_MAX 32.0e6
-#define ADF4351_RFOUT_MAX 4400.0e6
-#define ADF4351_RFOUT_MIN 34.375e6
-#define ADF4351_REFIN_MAX 250.0e6
 
 // Returns the RF divider value for a given frequency to guarantee that the
 // VCO frequency is between 2.2 and 4.4 GHz

@@ -216,15 +216,19 @@ void POWER_PeriphCommonClock_400MHz(void) {
 }
 
 void POWER_Use400MHzClocks() {
+  __disable_irq();
   // POWER_DeinitEverything();
   POWER_SystemClock_400MHz();
   POWER_PeriphCommonClock_400MHz();
   // POWER_InitEverything();
+  __enable_irq();
 }
 
 void POWER_Use32MHzClocks() {
+  __disable_irq();
   // POWER_DeinitEverything();
   POWER_SystemClock_32MHz();
   POWER_PeriphCommonClock_32MHz();
   // POWER_InitEverything();
+  __enable_irq();
 }

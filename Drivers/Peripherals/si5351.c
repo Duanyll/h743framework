@@ -397,7 +397,6 @@ void SI5351_EnableOutputs(uint8_t enabled) {
 void SI5351_write(uint8_t reg, uint8_t value) {
   if (SWIIC_WriteBytes8(SI5351_SWIIC, SI5351_ADDR, reg, &value, 1) !=
       SWIIC_OK) {
-    printf("fuck\n");
   }
 }
 

@@ -4,6 +4,10 @@
 #include "app.h"
 
 #include "ad7606b.h"
+#include "adf4351.h"
+#include "ad9910.h"
+#include "si5351.h"
+#include "ad9959.h"
 #include "keys.h"
 #include "nn.h"
 #include "pe43711.h"
@@ -60,6 +64,39 @@ void APP_InitAD7606B() {
   AD7606B_LeaveRegisterMode();
 }
 
+AD9959_Pins ad9959_pins;
+AD9959_GlobalConfig ad9959_config;
+AD9959_ChannelConfig ad9959_channel0, ad9959_channel1;
+
+void APP_InitAD9959() {
+  ad9959_pins.SDIO0_Port = GPIOB;
+  ad9959_pins.SDIO0_Pin = GPIO_PIN_9;
+  ad9959_pins.SCLK_Port = GPIOB;
+  ad9959_pins.SCLK_Pin = GPIO_PIN_8;
+  ad9959_pins.CSB_Port = GPIOB; 
+  ad9959_pins.CSB_Pin = GPIO_PIN_7;
+  ad9959_pins.RST_Port = GPIOA;
+  ad9959_pins.RST_Pin = GPIO_PIN_8;
+  ad9959_pins.IOUP_Port = GPIOA;
+  ad9959_pins.IOUP_Pin = GPIO_PIN_9;
+  AD9959_InitGlobalConfig(&ad9959_config);
+  AD9959_Init(&ad9959_pins, &ad9959_config);
+  AD9959_InitChannelConfig(&ad9959_channel0);
+  AD9959_InitChannelConfig(&ad9959_channel1);
+
+  AD9959_SelectChannels(&ad9959_config, AD9959_CHANNEL_0);
+  AD9959_SetFrequency(&ad9959_channel0, 100e6);
+  AD9959_SetPhase(&ad9959_channel0, 0);
+  AD9959_SetAmplitude(&ad9959_channel0, 0x3fff);
+  AD9959_IOUpdate(&ad9959_pins);
+
+  AD9959_SelectChannels(&ad9959_config, AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
+  ad9959_channel1.cfr.dac_power_down = 1;
+  AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1.cfr.raw);
+  AD9959_IOUpdate(&ad9959_pins);
+}
+
+
 #define AD_SAMPLE_COUNT 2048
 int16_t ad_data[AD_SAMPLE_COUNT * 4];
 
@@ -106,58 +143,15 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
   }
 }
 
-double pe43711_atten = 0.0;
-double pe43711_delta = 0.0;
-PE43711_Pins pe43711_pins;
-void APP_InitPE43711() {
-  pe43711_pins.LE_Port = GPIOB;
-  pe43711_pins.LE_Pin = GPIO_PIN_5;
-  pe43711_pins.CLK_Port = GPIOB;
-  pe43711_pins.CLK_Pin = GPIO_PIN_6;
-  pe43711_pins.SI_Port = GPIOB;
-  pe43711_pins.SI_Pin = GPIO_PIN_7;
-  PE43711_Init(&pe43711_pins);
-}
-
-void APP_IncreaseKeyCallback(uint8_t event) {
-  if (event == KEYS_EVENT_PRESS) {
-    pe43711_atten += 0.25;
-  } else if (event == KEYS_EVENT_HOLD) {
-    pe43711_delta = 0.01;
-  } else if (event == KEYS_EVENT_RELEASE) {
-    pe43711_delta = 0.0;
-  }
-}
-
-void APP_DecreaseKeyCallback(uint8_t event) {
-  if (event == KEYS_EVENT_PRESS) {
-    pe43711_atten -= 0.25;
-  } else if (event == KEYS_EVENT_HOLD) {
-    pe43711_delta = -0.01;
-  } else if (event == KEYS_EVENT_RELEASE) {
-    pe43711_delta = 0.0;
-  }
-}
-
-void APP_UpdatePE43711() {
-  pe43711_atten += pe43711_delta;
-  if (pe43711_atten < 0.0) {
-    pe43711_atten = 0.0;
-  } else if (pe43711_atten > 31.75) {
-    pe43711_atten = 31.75;
-  }
-  PE43711_SetAttenuation(&pe43711_pins, pe43711_atten);
-}
-
 KEYS_Pins keys_pins;
 void APP_InitKeys() {
   keys_pins.keyCount = 4;
   keys_pins.pins[0].port = SWITCH1_GPIO_Port;
   keys_pins.pins[0].pin = SWITCH1_Pin;
-  keys_pins.pins[0].callback = APP_IncreaseKeyCallback;
+  keys_pins.pins[0].callback = NULL;
   keys_pins.pins[1].port = SWITCH2_GPIO_Port;
   keys_pins.pins[1].pin = SWITCH2_Pin;
-  keys_pins.pins[1].callback = APP_DecreaseKeyCallback;
+  keys_pins.pins[1].callback = NULL;
   keys_pins.pins[2].port = SWITCH3_GPIO_Port;
   keys_pins.pins[2].pin = SWITCH3_Pin;
   keys_pins.pins[2].callback = NULL;
@@ -174,11 +168,13 @@ char computer_command[UART_RX_BUF_SIZE];
 char *computer_command_ptr;
 
 void APP_Init() {
+  POWER_Use400MHzClocks();
   computer = &huart6;
   RetargetInit(computer);
   // APP_InitAD7606B();
-  // APP_InitKeys();
-  // APP_InitPE43711();
+
+  APP_InitAD9959();
+  // APP_InitSI5351();
 
   // UART_RxBuffer_Init(&computer_rx_buf, computer);
   // computer_command_ptr = computer_command;
@@ -204,15 +200,6 @@ void APP_Loop() {
   //   computer_command_ptr = computer_command;
   //   UART_Open(&computer_rx_buf);
   // }
-
-  POWER_Use32MHzClocks();
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED1_Pin);
-  printf("Running at 32MHz!\n");
-  HAL_Delay(2000);
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED1_Pin);
-  POWER_Use400MHzClocks();
-  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED2_Pin);
-  printf("Running at 400MHz!\n");
-  HAL_Delay(2000);
-  HAL_GPIO_TogglePin(LED3_GPIO_Port, LED2_Pin);
+  AD7606B_CollectSamples(ad_data, 0x01, 1024, 20e3);
+  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 }
