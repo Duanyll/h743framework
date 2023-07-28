@@ -24,6 +24,7 @@ cDefinitions:
   - ARM_MATH_CM7
   - SCREEN_USE_ADDT
   - SWIIC_USE_OPEN_DRAIN
+  - BOARD_V3
 cxxDefinitions: []
 asDefinitions: []
 

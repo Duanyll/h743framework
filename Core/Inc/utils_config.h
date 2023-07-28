@@ -22,19 +22,23 @@
 
 #define SIGNAL_MAX_PEAKS 32
 
-// #define LED_1_PORT GPIOE
-// #define LED_1_PIN GPIO_PIN_4
-// #define LED_2_PORT GPIOE
-// #define LED_2_PIN GPIO_PIN_5
-// #define LED_3_PORT GPIOE
-// #define LED_3_PIN GPIO_PIN_6
+#ifdef BOARD_V2
+#define LED_1_PORT GPIOE
+#define LED_1_PIN GPIO_PIN_4
+#define LED_2_PORT GPIOE
+#define LED_2_PIN GPIO_PIN_5
+#define LED_3_PORT GPIOE
+#define LED_3_PIN GPIO_PIN_6
+#endif
 
+#ifdef BOARD_V3
 #define LED_1_PORT GPIOE
 #define LED_1_PIN GPIO_PIN_13
 #define LED_2_PORT GPIOE
 #define LED_2_PIN GPIO_PIN_14
 #define LED_3_PORT GPIOE
 #define LED_3_PIN GPIO_PIN_15
+#endif
 
 #define ALL_LEDS(_)                                                            \
   _(1)                                                                         \

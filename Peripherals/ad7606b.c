@@ -129,10 +129,11 @@ uint8_t AD7606B_ParallelRegisterRead(uint8_t addr) {
   AD7606B_SetDBInput();
   WRITE(RD, LOW);
   AD7606B_Delay();
-  uint8_t data = pins->PinsToData(pins->DB_Port->IDR);
+  uint16_t data = pins->PinsToData(pins->DB_Port->IDR);
   WRITE(RD, HIGH);
   WRITE(CS, HIGH);
   AD7606B_Delay();
+  // printf("Read %04X\n", data);
   return data;
 }
 
@@ -149,6 +150,7 @@ void AD7606B_ParallelRegisterWrite(uint8_t addr, uint8_t data) {
   WRITE(CS, HIGH);
   AD7606B_Delay();
   AD7606B_SetDBInput();
+  TIM_DelayUs(2);
 }
 
 void AD7606B_LeaveRegisterMode() {

@@ -4,21 +4,21 @@
 #include "app.h"
 
 #include "ad7606c.h"
-#include "adf4351.h"
 #include "ad9910.h"
-#include "si5351.h"
 #include "ad9959.h"
+#include "adf4351.h"
 #include "keys.h"
+#include "led.h"
 #include "nn.h"
 #include "pe43711.h"
 #include "power.h"
 #include "retarget.h"
 #include "screen.h"
 #include "serial.h"
+#include "si5351.h"
 #include "signal.h"
 #include "spi.h"
 #include "timers.h"
-#include "led.h"
 
 UART_HandleTypeDef *computer;
 
@@ -45,6 +45,10 @@ void APP_InitAD7606B() {
   ad7606b_pins.BUSY_Pin = GPIO_PIN_6;
   ad7606b_pins.WR_Port = GPIOB;
   ad7606b_pins.WR_Pin = GPIO_PIN_6;
+  ad7606b_pins.RESET_Port = GPIOE;
+  ad7606b_pins.RESET_Pin = GPIO_PIN_14;
+  ad7606b_pins.CONVST_Port = GPIOB;
+  ad7606b_pins.CONVST_Pin = GPIO_PIN_5;
 
   ad7606b_pins.DB_Port = GPIOD;
   ad7606b_pins.DataToPins = ad7606b_convert;
@@ -84,6 +88,10 @@ void APP_InitAD7606C() {
   ad7606b_pins.BUSY_Pin = AD_BUSY_Pin;
   ad7606b_pins.WR_Port = AD_WR_GPIO_Port;
   ad7606b_pins.WR_Pin = AD_WR_Pin;
+  ad7606b_pins.RESET_Port = AD_RESET_GPIO_Port;
+  ad7606b_pins.RESET_Pin = AD_RESET_Pin;
+  ad7606b_pins.CONVST_Port = AD_CONVST_GPIO_Port;
+  ad7606b_pins.CONVST_Pin = AD_CONVST_Pin;
 
   ad7606b_pins.DB_Port = AD_D0_GPIO_Port;
   ad7606b_pins.DataToPins = identity_u16;
@@ -107,11 +115,13 @@ void APP_InitAD7606C() {
                                 ad7606b_config.raw[AD7606C_REG_BANDWIDTH]);
   AD7606B_SetRange(&ad7606b_config, 0, AD7606C_RANGE_PM2V5);
   AD7606B_SetRange(&ad7606b_config, 1, AD7606C_RANGE_PM2V5);
-  AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
-  AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
+  // AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
+  // AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
 
   int version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
   printf("AD7606B version: %d\n", version);
+  int range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE);
+  printf("AD7606B range: %d\n", range);
 
   AD7606B_LeaveRegisterMode();
 }
@@ -125,7 +135,7 @@ void APP_InitAD9959() {
   ad9959_pins.SDIO0_Pin = GPIO_PIN_9;
   ad9959_pins.SCLK_Port = GPIOB;
   ad9959_pins.SCLK_Pin = GPIO_PIN_8;
-  ad9959_pins.CSB_Port = GPIOB; 
+  ad9959_pins.CSB_Port = GPIOB;
   ad9959_pins.CSB_Pin = GPIO_PIN_7;
   ad9959_pins.RST_Port = GPIOA;
   ad9959_pins.RST_Pin = GPIO_PIN_8;
@@ -142,12 +152,12 @@ void APP_InitAD9959() {
   AD9959_SetAmplitude(&ad9959_channel0, 0x3fff);
   AD9959_IOUpdate(&ad9959_pins);
 
-  AD9959_SelectChannels(&ad9959_config, AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
+  AD9959_SelectChannels(&ad9959_config,
+                        AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
   ad9959_channel1.cfr.dac_power_down = 1;
   AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1.cfr.raw);
   AD9959_IOUpdate(&ad9959_pins);
 }
-
 
 #define AD_SAMPLE_COUNT 2048
 int16_t ad_data[AD_SAMPLE_COUNT * 4];
@@ -219,13 +229,15 @@ void APP_Init() {
   POWER_Use400MHzClocks();
   computer = &huart1;
   RetargetInit(computer);
-  // APP_InitAD7606B();
+#ifdef BOARD_V2
+  APP_InitAD7606B();
+#endif
+#ifdef BOARD_V3
   APP_InitAD7606C();
+#endif
   UART_ListenCommands(computer, "\n");
 }
 
 void APP_Loop() {
   UART_PollCommands(APP_HexCommandCallback, 1);
-  // AD7606B_CollectSamples(ad_data, 0x01, 1024, 20e3);
-  // HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 }
