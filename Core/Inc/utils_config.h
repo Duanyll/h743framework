@@ -21,3 +21,22 @@
   _(TIM7)
 
 #define SIGNAL_MAX_PEAKS 32
+
+// #define LED_1_PORT GPIOE
+// #define LED_1_PIN GPIO_PIN_4
+// #define LED_2_PORT GPIOE
+// #define LED_2_PIN GPIO_PIN_5
+// #define LED_3_PORT GPIOE
+// #define LED_3_PIN GPIO_PIN_6
+
+#define LED_1_PORT GPIOE
+#define LED_1_PIN GPIO_PIN_13
+#define LED_2_PORT GPIOE
+#define LED_2_PIN GPIO_PIN_14
+#define LED_3_PORT GPIOE
+#define LED_3_PIN GPIO_PIN_15
+
+#define ALL_LEDS(_)                                                            \
+  _(1)                                                                         \
+  _(2)                                                                         \
+  _(3)

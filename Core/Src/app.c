@@ -18,6 +18,7 @@
 #include "signal.h"
 #include "spi.h"
 #include "timers.h"
+#include "led.h"
 
 UART_HandleTypeDef *computer;
 
@@ -25,8 +26,56 @@ AD7606B_Config ad7606b_config;
 AD7606B_Pins ad7606b_pins;
 
 uint16_t identity_u16(uint16_t x) { return x; }
+uint8_t reverse_bits(uint8_t b) {
+  b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+  b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+  b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+  return b;
+}
+uint16_t ad7606b_convert(uint16_t x) {
+  return (reverse_bits(x >> 8) << 8) | reverse_bits(x & 0xff);
+}
 
 void APP_InitAD7606B() {
+  ad7606b_pins.CS_Port = GPIOE;
+  ad7606b_pins.CS_Pin = GPIO_PIN_12;
+  ad7606b_pins.RD_Port = GPIOE;
+  ad7606b_pins.RD_Pin = GPIO_PIN_11;
+  ad7606b_pins.BUSY_Port = GPIOC;
+  ad7606b_pins.BUSY_Pin = GPIO_PIN_6;
+  ad7606b_pins.WR_Port = GPIOB;
+  ad7606b_pins.WR_Pin = GPIO_PIN_6;
+
+  ad7606b_pins.DB_Port = GPIOD;
+  ad7606b_pins.DataToPins = ad7606b_convert;
+  ad7606b_pins.PinsToData = ad7606b_convert;
+
+  ad7606b_pins.OS0_Port = GPIOE;
+  ad7606b_pins.OS0_Pin = GPIO_PIN_10;
+  ad7606b_pins.OS1_Port = GPIOE;
+  ad7606b_pins.OS1_Pin = GPIO_PIN_9;
+  ad7606b_pins.OS2_Port = GPIOE;
+  ad7606b_pins.OS2_Pin = GPIO_PIN_8;
+  ad7606b_pins.PAR_SEL_Port = GPIOE;
+  ad7606b_pins.PAR_SEL_Pin = GPIO_PIN_13;
+
+  ad7606b_pins.TIM_Handle = &htim5;
+
+  AD7606B_Init(&ad7606b_pins);
+  AD7606B_InitConfig(&ad7606b_config);
+
+  AD7606B_SetRange(&ad7606b_config, 0, AD7606C_RANGE_PM2V5);
+  AD7606B_SetRange(&ad7606b_config, 1, AD7606C_RANGE_PM2V5);
+  AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
+  AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
+
+  int version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
+  printf("AD7606B version: %d\n", version);
+
+  AD7606B_LeaveRegisterMode();
+}
+
+void APP_InitAD7606C() {
   ad7606b_pins.CS_Port = AD_CS_GPIO_Port;
   ad7606b_pins.CS_Pin = AD_CS_Pin;
   ad7606b_pins.RD_Port = AD_RD_GPIO_Port;
@@ -49,7 +98,7 @@ void APP_InitAD7606B() {
   ad7606b_pins.PAR_SEL_Port = AD_PAR_SEL_GPIO_Port;
   ad7606b_pins.PAR_SEL_Pin = AD_PAR_SEL_Pin;
 
-  ad7606b_pins.TIM_Handle = &htim2;
+  ad7606b_pins.TIM_Handle = &htim5;
 
   AD7606B_Init(&ad7606b_pins);
   AD7606B_InitConfig(&ad7606b_config);
@@ -60,6 +109,9 @@ void APP_InitAD7606B() {
   AD7606B_SetRange(&ad7606b_config, 1, AD7606C_RANGE_PM2V5);
   AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
   AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
+
+  int version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
+  printf("AD7606B version: %d\n", version);
 
   AD7606B_LeaveRegisterMode();
 }
@@ -111,12 +163,12 @@ int popcount(uint8_t x) {
 
 void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
                        uint32_t sample_rate) {
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+  LED_On(2);
   AD7606B_CollectSamples(ad_data, channels, sample_count, sample_rate);
   UART_SendString(computer, "\xff\xff\xff\xff");
   HAL_UART_Transmit(computer, (uint8_t *)ad_data,
                     sample_count * 2 * popcount(channels), 10000);
-  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+  LED_Off(2);
 }
 
 void APP_HexCommandCallback(uint8_t *data, int len) {
@@ -146,11 +198,11 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
 KEYS_Pins keys_pins;
 void APP_InitKeys() {
   keys_pins.keyCount = 4;
-  keys_pins.pins[0].port = SWITCH1_GPIO_Port;
-  keys_pins.pins[0].pin = SWITCH1_Pin;
+  keys_pins.pins[0].port = SWITCH2_GPIO_Port;
+  keys_pins.pins[0].pin = SWITCH2_Pin;
   keys_pins.pins[0].callback = NULL;
-  keys_pins.pins[1].port = SWITCH2_GPIO_Port;
-  keys_pins.pins[1].pin = SWITCH2_Pin;
+  keys_pins.pins[1].port = SWITCH1_GPIO_Port;
+  keys_pins.pins[1].pin = SWITCH1_Pin;
   keys_pins.pins[1].callback = NULL;
   keys_pins.pins[2].port = SWITCH3_GPIO_Port;
   keys_pins.pins[2].pin = SWITCH3_Pin;
@@ -165,18 +217,15 @@ void APP_InitKeys() {
 
 void APP_Init() {
   POWER_Use400MHzClocks();
-  computer = &huart6;
+  computer = &huart1;
   RetargetInit(computer);
   // APP_InitAD7606B();
-
-  APP_InitAD9959();
-  // APP_InitSI5351();
-
-  // KEYS_Start();
+  APP_InitAD7606C();
+  UART_ListenCommands(computer, "\n");
 }
 
 void APP_Loop() {
-  // UART_PollCommands(1, APP_HexCommandCallback);
-  AD7606B_CollectSamples(ad_data, 0x01, 1024, 20e3);
-  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+  UART_PollCommands(APP_HexCommandCallback, 1);
+  // AD7606B_CollectSamples(ad_data, 0x01, 1024, 20e3);
+  // HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 }

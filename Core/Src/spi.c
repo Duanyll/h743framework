@@ -22,6 +22,7 @@
 
 /* USER CODE BEGIN 0 */
 #include "timers.h"
+#include "led.h"
 /* USER CODE END 0 */
 
 SPI_HandleTypeDef hspi3;
@@ -186,7 +187,7 @@ void SPI_StartDMARecieve(uint16_t *buffer, uint16_t totalSize, uint16_t *output,
   HAL_StatusTypeDef status =
       HAL_SPI_Receive_DMA(&hspi3, (uint8_t *)buffer, totalSize);
   if (status != HAL_OK) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    
   }
 }
 
@@ -222,7 +223,7 @@ uint16_t SPI_GetResampledOutput() {
 }
 
 void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+  LED_On(2);
   SPI_validBuffer = SPI_rxBuffer;
   SPI_validBufferStartTime = SPI_validBufferEndTime;
   SPI_validBufferEndTime = TIM_GetUsTimer();
@@ -235,7 +236,7 @@ void HAL_SPI_RxHalfCpltCallback(SPI_HandleTypeDef *hspi) {
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+  LED_Off(2);
   SPI_validBuffer = SPI_rxBuffer + SPI_halfBufferLength;
   SPI_validBufferStartTime = SPI_validBufferEndTime;
   SPI_validBufferEndTime = TIM_GetUsTimer();

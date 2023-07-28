@@ -31,10 +31,8 @@
 #include <stdio.h>
 
 #include "app.h"
-#include "keys.h"
-#include "retarget.h"
-#include "signal.h"
 #include "power.h"
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -121,6 +119,7 @@ int main(void)
   MX_TIM5_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+  LED_Init();
   APP_Init();
   /* USER CODE END 2 */
 
@@ -226,7 +225,6 @@ void PeriphCommonClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void APP_KeysHandler(uint8_t key, uint8_t state) {}
 /* USER CODE END 4 */
 
 /**
@@ -238,9 +236,9 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
+  LED_On(1);
+  printf("HAL ERROR\n");
   while (1) {
-    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
-    HAL_Delay(100);
   }
   /* USER CODE END Error_Handler_Debug */
 }

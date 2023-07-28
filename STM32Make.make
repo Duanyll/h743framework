@@ -77,6 +77,7 @@ Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_uart_ex.c \
 Peripherals/ad7606.c \
 Peripherals/ad7606b.c \
+Peripherals/ad8318.c \
 Peripherals/ad9269.c \
 Peripherals/ad9834.c \
 Peripherals/ad9910.c \
@@ -95,6 +96,7 @@ SignalNet/Src/operators.c \
 SignalNet/Src/signet_params.c \
 Utils/cJSON.c \
 Utils/keys.c \
+Utils/led.c \
 Utils/retarget.c \
 Utils/serial.c \
 Utils/signal.c \

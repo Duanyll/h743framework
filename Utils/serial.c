@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "serial.h"
+#include "led.h"
 
 #define DEFINE_UART_BUFFER_POINTER(port) volatile UART_RxBuffer *port##RxBuffer;
 ALL_UART_PORTS(DEFINE_UART_BUFFER_POINTER)
@@ -223,9 +224,9 @@ void UART_PollCommands(void (*callback)(uint8_t *data, int len), int timeout) {
     computer_command_ptr = computer_command;
   } else if (computer_rx_buf.isOpen == FALSE ||
              computer_command_ptr == computer_command + UART_RX_BUF_SIZE) {
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    LED_On(1);
     HAL_Delay(100);
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    LED_Off(1);
     computer_command_ptr = computer_command;
     UART_Open(&computer_rx_buf);
   }

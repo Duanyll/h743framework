@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "timers.h"
+#include "led.h"
 
 static AD7606B_Pins *pins;
 
@@ -25,6 +26,7 @@ void AD7606B_SetDBInput() {
       .Pin = 0xFFFF, // All pins
       .Mode = GPIO_MODE_INPUT,
       .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
   };
   HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 }
@@ -165,6 +167,7 @@ void AD7606B_LeaveRegisterMode() {
 }
 
 void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
+  LED_On(3);
   AD7606B_isSampling = TRUE;
   WRITE(CS, LOW);
   WRITE(CONVST, LOW);
@@ -194,7 +197,7 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels) {
   WRITE(CS, HIGH);
   AD7606B_Delay();
   AD7606B_isSampling = FALSE;
-  // HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+  LED_Off(3);
 }
 
 void AD7606B_TimerCallback();
@@ -245,7 +248,7 @@ void AD7606B_StopContinuousConvert(void) {
 void AD7606B_TimerCallback() {
   if (AD7606B_isSampling) {
     AD7606B_badSampleFlag = TRUE;
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    LED_On(1);
     return;
   } else if (AD7606B_sampleCount > 0) {
     AD7606B_ADCConvert(AD7606B_output, AD7606B_channels);
