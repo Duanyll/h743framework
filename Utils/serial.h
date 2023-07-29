@@ -52,9 +52,6 @@ int UART_GetUnreadSize(UART_RxBuffer *rxBuf);
 /// @brief Close UART port and stop receiving data
 void UART_Close(UART_RxBuffer *rxBuf);
 
-void UART_ListenCommands(UART_HandleTypeDef* huart, const char* delim);
-void UART_PollCommands(void (*callback)(uint8_t *data, int len), int timeout);
-
 void UART_SendHex(UART_HandleTypeDef *huart, uint8_t *buf, int len);
 void UART_SendJson(UART_HandleTypeDef *huart, cJSON *json);
 void UART_SendString(UART_HandleTypeDef *huart, const char *str);

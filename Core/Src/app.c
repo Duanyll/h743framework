@@ -4,13 +4,10 @@
 #include "app.h"
 
 #include "ad7606c.h"
-#include "ad9910.h"
 #include "ad9959.h"
-#include "adf4351.h"
 #include "keys.h"
 #include "led.h"
 #include "nn.h"
-#include "pe43711.h"
 #include "power.h"
 #include "retarget.h"
 #include "screen.h"
@@ -159,6 +156,21 @@ void APP_InitAD9959() {
   AD9959_IOUpdate(&ad9959_pins);
 }
 
+SWIIC_Config si5351_pins;
+void APP_InitSI5351() {
+  si5351_pins.SDA_Port = GPIOB;
+  si5351_pins.SDA_Pin = GPIO_PIN_6;
+  si5351_pins.SCL_Port = GPIOB;
+  si5351_pins.SCL_Pin = GPIO_PIN_5;
+  si5351_pins.delay = 100;
+  SWIIC_Init(&si5351_pins);
+  SI5351_Init(&si5351_pins, 0);
+  HAL_Delay(10);
+  SI5351_SetupCLK0(50e6, SI5351_DRIVE_STRENGTH_8MA);
+  SI5351_SetupCLK2(50e6, SI5351_DRIVE_STRENGTH_8MA);
+  SI5351_EnableOutputs(0x5);
+}
+
 #define AD_SAMPLE_COUNT 2048
 int16_t ad_data[AD_SAMPLE_COUNT * 4];
 
@@ -181,7 +193,15 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
   LED_Off(2);
 }
 
-void APP_HexCommandCallback(uint8_t *data, int len) {
+UART_RxBuffer com_buf;
+UART_HandleTypeDef* computer;
+
+void APP_PollUartCommands() {
+  char data[16];
+  int readCount = 0;
+  readCount = UART_Read(&com_buf, data, 1, 1);
+  if (readCount == 0)
+    return;
   if (*data == 1) {
     // 1 byte channels
     // 4 byte sample count
@@ -189,19 +209,25 @@ void APP_HexCommandCallback(uint8_t *data, int len) {
     uint8_t channels = 0x0f;
     uint32_t sample_count = 128;
     uint32_t sample_rate = 100000;
-    if (len >= 2)
-      channels = data[1];
-    if (len >= 6)
-      sample_count = *(uint32_t *)(data + 2);
-    if (len >= 10)
-      sample_rate = *(uint32_t *)(data + 6);
+    readCount = UART_Read(&com_buf, data + 1, 9, 1000);
+    if (readCount != 9)
+      return;
+    channels = data[1];
+    sample_count = *(uint32_t *)(data + 2);
+    sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
   } else if (*data == 2) {
     double freq = TIM_CountFrequencySync(&htim2, 100);
     printf("Freq: %fMHz\n", freq / 1000000.0);
-  } else {
-    // Echo back
-    UART_SendHex(computer, data, len);
+  } else if (*data == 3) {
+    readCount = UART_Read(&com_buf, data + 1, 9, 1000);
+    if (readCount != 9)
+      return;
+    int freq0 = *(int *)(data + 1);
+    int freq2 = *(int *)(data + 5);
+    uint8_t power = *(uint8_t *)(data + 9);
+    SI5351_SetupCLK0(freq0, power);
+    SI5351_SetupCLK2(freq2, power);
   }
 }
 
@@ -235,9 +261,11 @@ void APP_Init() {
 #ifdef BOARD_V3
   APP_InitAD7606C();
 #endif
-  UART_ListenCommands(computer, "\n");
+  APP_InitSI5351();
+  UART_RxBuffer_Init(&com_buf, computer);
+  UART_Open(&com_buf);
 }
 
-void APP_Loop() {
-  UART_PollCommands(APP_HexCommandCallback, 1);
+void APP_Loop() { 
+  APP_PollUartCommands();
 }

@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "serial.h"
 #include "led.h"
+#include "serial.h"
 
 #define DEFINE_UART_BUFFER_POINTER(port) volatile UART_RxBuffer *port##RxBuffer;
 ALL_UART_PORTS(DEFINE_UART_BUFFER_POINTER)
@@ -200,36 +200,6 @@ void UART_Close(UART_RxBuffer *rxBuf) {
     port##RxBuffer = NULL;                                                     \
   }
   ALL_UART_PORTS(CLEAR_UART_BUFFER_POINTER)
-}
-
-static UART_RxBuffer computer_rx_buf;
-static char computer_command[UART_RX_BUF_SIZE];
-static char *computer_command_ptr;
-
-void UART_ListenCommands(UART_HandleTypeDef *huart, const char *delim) {
-  UART_RxBuffer_Init(&computer_rx_buf, huart);
-  computer_command_ptr = computer_command;
-  UART_Open(&computer_rx_buf);
-}
-void UART_PollCommands(void (*callback)(uint8_t *data, int len), int timeout) {
-  int len = 0;
-  BOOL ok =
-      UART_ReadUntil(&computer_rx_buf, computer_command_ptr,
-                     computer_command + UART_RX_BUF_SIZE - computer_command_ptr,
-                     "\n", 1, &len);
-  computer_command_ptr += len;
-  if (ok) {
-    callback((uint8_t *)computer_command,
-             computer_command_ptr - computer_command);
-    computer_command_ptr = computer_command;
-  } else if (computer_rx_buf.isOpen == FALSE ||
-             computer_command_ptr == computer_command + UART_RX_BUF_SIZE) {
-    LED_On(1);
-    HAL_Delay(100);
-    LED_Off(1);
-    computer_command_ptr = computer_command;
-    UART_Open(&computer_rx_buf);
-  }
 }
 
 void UART_SendHex(UART_HandleTypeDef *huart, uint8_t *buf, int len) {
