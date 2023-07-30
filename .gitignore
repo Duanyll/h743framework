@@ -5,6 +5,8 @@ build/
 **/*.pth
 SignalNet/data
 **/*.pyc
+*.png
+*.npz
 
 # Prerequisites
 *.d

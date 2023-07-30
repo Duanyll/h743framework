@@ -6,7 +6,7 @@
 #include "arm_math.h"
 
 void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
-                       double sampleRate, SIGNAL_FFTBufferQ15 *buffer) {
+                       double sampleRate, SIGNAL_FFTBufferF32 *buffer) {
   if (points == 64 || points == 256 || points == 1024 || points == 4096) {
     buffer->rad4Instance.fftLen = points;
     arm_cfft_radix4_init_f32(&buffer->rad4Instance, points, 0, 1);
@@ -39,7 +39,7 @@ void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
 
 void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
                                  SIGNAL_SpectrumF32 *freqData,
-                                 SIGNAL_FFTBufferQ15 *buffer) {
+                                 SIGNAL_FFTBufferF32 *buffer) {
   int idx = timeData->offset;
   int32_t mean = 0;
   for (int i = 0; i < timeData->points; i++) {
@@ -60,7 +60,7 @@ void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
 
 void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
                                  SIGNAL_SpectrumF32 *freqData,
-                                 SIGNAL_FFTBufferQ15 *buffer) {
+                                 SIGNAL_FFTBufferF32 *buffer) {
   int idx = timeData->offset;
   float32_t mean = 0;
   for (int i = 0; i < timeData->points; i++) {

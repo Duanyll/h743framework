@@ -246,8 +246,9 @@ void SI5351_Calc(int32_t Fclk, SI5351_PLLConfig_t *pll_conf,
                  SI5351_OutputConfig_t *out_conf) {
   if (Fclk < 8000)
     Fclk = 8000;
-  else if (Fclk > 160000000)
-    Fclk = 160000000;
+  // Remove the limits! We can go up to 225 MHz!
+  // else if (Fclk > 160000000)
+  //   Fclk = 160000000;
 
   out_conf->allowIntegerMode = 1;
 
@@ -291,8 +292,10 @@ void SI5351_Calc(int32_t Fclk, SI5351_PLLConfig_t *pll_conf,
     y = (Fpll % Fclk) / t;
     z = Fclk / t;
   } else {
-    // Valid for Fclk in 75..160 MHz range
-    if (Fclk >= 150000000) {
+    if (Fclk >= 270000000) {
+      x = 2;
+    } else if (Fclk >= 150000000) {
+      // Valid for Fclk in 75..160 MHz range
       x = 4;
     } else if (Fclk >= 100000000) {
       x = 6;
@@ -395,6 +398,7 @@ void SI5351_EnableOutputs(uint8_t enabled) {
 void SI5351_write(uint8_t reg, uint8_t value) {
   if (SWIIC_WriteBytes8(SI5351_SWIIC, SI5351_ADDR, reg, &value, 1) !=
       SWIIC_OK) {
+    printf("fuck\n");
   }
 }
 

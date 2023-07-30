@@ -67,6 +67,10 @@ typedef struct {
 
 #define SI5351_ADDR 0x60
 
+#define SI5351_CHANNEL_FLAG_CLK0 0x01
+#define SI5351_CHANNEL_FLAG_CLK1 0x02
+#define SI5351_CHANNEL_FLAG_CLK2 0x04
+
 /*
  * Basic interface allows to use only CLK0 and CLK2.
  * This interface uses separate PLLs for both CLK0 and CLK2 thus the frequencies

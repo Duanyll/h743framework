@@ -38,6 +38,7 @@ BUILD_DIR = build
 C_SOURCES =  \
 Core/Src/adc.c \
 Core/Src/app.c \
+Core/Src/board.c \
 Core/Src/dac.c \
 Core/Src/dma.c \
 Core/Src/gpio.c \

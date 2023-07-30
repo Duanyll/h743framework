@@ -35,7 +35,7 @@ typedef struct SIGNAL_FFTBufferF32 {
   arm_cfft_radix4_instance_f32 rad4Instance;
   float *fftBuffer; // Allocate at least points * 2 elements
   float *magBuffer; // Allocate at least points elements
-} SIGNAL_FFTBufferQ15;
+} SIGNAL_FFTBufferF32;
 
 #endif
 
@@ -64,10 +64,10 @@ typedef struct SIGNAL_PeaksF32 {
 
 void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
                                  SIGNAL_SpectrumF32 *freqData,
-                                 SIGNAL_FFTBufferQ15 *buffer);
+                                 SIGNAL_FFTBufferF32 *buffer);
 void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
                                  SIGNAL_SpectrumF32 *freqData,
-                                 SIGNAL_FFTBufferQ15 *buffer);
+                                 SIGNAL_FFTBufferF32 *buffer);
 
 #endif
 
