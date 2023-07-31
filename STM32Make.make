@@ -49,6 +49,7 @@ Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/system_stm32h7xx.c \
 Core/Src/tim.c \
+Core/Src/ui.c \
 Core/Src/usart.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal.c \
 Drivers/STM32H7xx_HAL_Driver/Src/stm32h7xx_hal_adc.c \
@@ -91,6 +92,7 @@ Peripherals/pe43711.c \
 Peripherals/screen.c \
 Peripherals/si5351.c \
 Peripherals/swiic.c \
+Peripherals/zjy122250/epaper.c \
 SignalNet/Src/graph.c \
 SignalNet/Src/lenet_params.c \
 SignalNet/Src/operators.c \
@@ -183,7 +185,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
--IPeripherals \
+-IPeripherals/ \
 -ISignalNet/Inc/ \
 -IUtils
 

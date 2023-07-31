@@ -84,7 +84,7 @@ includeDirectories:
   - Src/**
   - Core/Src/**
   - Core/Lib/**
-  - Peripherals/**
+  - Peripherals/
   - Drivers/CMSIS/DSP/Include/
   - SignalNet/Inc/
   - Utils/**
