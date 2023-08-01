@@ -21,10 +21,10 @@ void UI_InitEPD(void) {
   EPD_pins.SDA_Pin = GPIO_PIN_12;
 
   GPIO_InitTypeDef s = {
-    .Pin = GPIO_PIN_0,
-    .Mode = GPIO_MODE_OUTPUT_PP,
-    .Pull = GPIO_NOPULL,
-    .Speed = GPIO_SPEED_FREQ_LOW,
+      .Pin = GPIO_PIN_0,
+      .Mode = GPIO_MODE_OUTPUT_PP,
+      .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_LOW,
   };
   HAL_GPIO_Init(GPIOB, &s);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
@@ -89,7 +89,8 @@ void UI_TestEPD(void) {
 #define UI_TERMINAL_HEIGHT 10
 #define UI_TERMINAL_WIDTH 35
 
-static char terminal[UI_TERMINAL_HEIGHT][UI_TERMINAL_WIDTH]; // Circular buffer for history
+static char terminal[UI_TERMINAL_HEIGHT]
+                    [UI_TERMINAL_WIDTH]; // Circular buffer for history
 static uint8_t terminal_head = 0;
 static uint8_t terminal_tail = 0;
 
@@ -109,7 +110,8 @@ void UI_TerminalRender() {
   int line = terminal_tail;
   int idx = 0;
   while (line != terminal_head) {
-    EPD_paint_showString(5, idx * 12 + 1, terminal[line], EPD_FONT_SIZE12x6, EPD_COLOR_BLACK);
+    EPD_paint_showString(5, idx * 12 + 1, terminal[line], EPD_FONT_SIZE12x6,
+                         EPD_COLOR_BLACK);
     line = (line + 1) % UI_TERMINAL_HEIGHT;
     idx++;
   }
@@ -128,9 +130,7 @@ void UI_TerminalPrintf(const char *format, ...) {
   UI_TerminalRender();
 }
 
-void UI_TerminalFlush() {
-  EPD_update();
-}
+void UI_TerminalFlush() { EPD_update(); }
 
 void UI_TerminalClear() {
   terminal_head = terminal_tail = 0;
@@ -147,9 +147,7 @@ typedef struct {
   int min;
   int max;
   int stride;
-  
+
 } UI_PlotOptionsF32;
 
-void UI_Plot(UI_PlotOptionsF32 *opt) {
-  
-}
+void UI_Plot(UI_PlotOptionsF32 *opt) {}

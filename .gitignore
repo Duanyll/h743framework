@@ -8,6 +8,7 @@ SignalNet/data
 *.png
 *.npz
 *.csv
+.cache
 
 # Prerequisites
 *.d

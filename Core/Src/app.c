@@ -366,6 +366,7 @@ void APP_Init() {
   // UI_InitEPD();
   // UI_TestEPD();
   APP_InitKeys();
+  printf("CMake is working!\n");
 }
 
 void APP_Loop() {
