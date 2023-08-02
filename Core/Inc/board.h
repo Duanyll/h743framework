@@ -3,6 +3,7 @@
 #include "ad7606c.h"
 #include "ad9959.h"
 #include "si5351.h"
+#include "lmx2572_legacy.h"
 #include "keys.h"
 #include "led.h"
 #include "timers.h"
@@ -18,3 +19,5 @@ void BOARD_InitAD9959();
 
 extern SWIIC_Config si5351_pins;
 void BOARD_InitSI5351();    
+
+void BOARD_InitLMX2572();

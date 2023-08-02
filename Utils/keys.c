@@ -52,7 +52,7 @@ void KEYS_TimerCallback() {
         state[i].releaseCount = 0;
         if (state[i].holdCount == KEYS_LONG_HOLD_COUNT) {
           KEYS_PushEvent(i, KEYS_EVENT_HOLD);
-          printf("KEYS_EVENT_HOLD\n");
+          // printf("KEYS_EVENT_HOLD\n");
         }
       } else {
         state[i].releaseCount++;
@@ -61,7 +61,7 @@ void KEYS_TimerCallback() {
           state[i].holdCount = 0;
           state[i].releaseCount = 0;
           KEYS_PushEvent(i, KEYS_EVENT_RELEASE);
-          printf("KEYS_EVENT_RELEASE\n");
+          // printf("KEYS_EVENT_RELEASE\n");
         }
       }
     } else {
@@ -70,7 +70,7 @@ void KEYS_TimerCallback() {
         if (state[i].holdCount >= KEYS_HOLD_COUNT) {
           state[i].isOn = TRUE;
           KEYS_PushEvent(i, KEYS_EVENT_PRESS);
-          printf("KEYS_EVENT_PRESS\n");
+          // printf("KEYS_EVENT_PRESS\n");
         }
       } else {
         state[i].holdCount = 0;

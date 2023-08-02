@@ -15,6 +15,7 @@ typedef struct SIGNAL_TimeDataQ15 {
                      // stride, multiple signals can be stored in the
                      // same buffer.
   float range;       // range of the signal +/- range
+  BOOL stripDc;      // if true, strip the DC component
 } SIGNAL_TimeDataQ15;
 
 typedef struct SIGNAL_TimeDataF32 {
@@ -23,6 +24,7 @@ typedef struct SIGNAL_TimeDataF32 {
   int stride;
   double sampleRate;
   float *timeData;
+  BOOL stripDc; // if true, strip the DC component
 } SIGNAL_TimeDataF32;
 
 #if defined(ARM_MATH_CM3) || defined(ARM_MATH_CM4) || defined(ARM_MATH_CM7) || \

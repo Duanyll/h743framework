@@ -1,4 +1,9 @@
 #include "board.h"
+#include "ad7606c.h"
+#include "lmx2572.h"
+#include "stm32h743xx.h"
+#include "stm32h7xx_hal_gpio.h"
+
 
 /* -------------------------------------------------------------------------- */
 /*                                   AD7606                                   */
@@ -105,21 +110,22 @@ void BOARD_InitAD7606() {
   AD7606B_SetRange(&ad7606b_config, 0, AD7606C_RANGE_PM2V5);
   AD7606B_SetRange(&ad7606b_config, 1, AD7606C_RANGE_PM2V5);
   AD7606B_SetRange(&ad7606b_config, 2, AD7606C_RANGE_PM2V5);
-  AD7606B_SetRange(&ad7606b_config, 3, AD7606C_RANGE_PM2V5);
+  AD7606B_SetRange(&ad7606b_config, 3, AD7606C_RANGE_5V);
   // AD7606B_SetOverSample(&ad7606b_config, 0, AD7606B_OVERSAMPLE_4);
   // AD7606B_SetOverSample(&ad7606b_config, 1, AD7606B_OVERSAMPLE_4);
 
-  int version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
-  printf("AD7606B version: %d\n", version);
-  int range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE);
-  printf("AD7606B range 12: %d\n", range);
-  range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 1);
-  printf("AD7606B range 34: %d\n", range);
-  range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 2);
-  printf("AD7606B range 56: %d\n", range);
-  range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 3);
-  printf("AD7606B range 78: %d\n", range);
-
+  /*
+    int version = AD7606B_ParallelRegisterRead(AD7606B_REG_ID);
+    printf("AD7606B version: %d\n", version);
+    int range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE);
+    printf("AD7606B range 12: %d\n", range);
+    range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 1);
+    printf("AD7606B range 34: %d\n", range);
+    range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 2);
+    printf("AD7606B range 56: %d\n", range);
+    range = AD7606B_ParallelRegisterRead(AD7606B_REG_RANGE + 3);
+    printf("AD7606B range 78: %d\n", range);
+  */
   AD7606B_LeaveRegisterMode();
 }
 
@@ -153,13 +159,13 @@ void BOARD_InitAD9959() {
   AD9959_SetFrequency(&ad9959_channel0, 100e6);
   AD9959_SetPhase(&ad9959_channel0, 0);
   AD9959_SetAmplitude(&ad9959_channel0, 0x3fff);
-  AD9959_IOUpdate(&ad9959_pins);
+  AD9959_IOUpdate();
 
   AD9959_SelectChannels(&ad9959_config,
                         AD9959_CHANNEL_1 | AD9959_CHANNEL_2 | AD9959_CHANNEL_3);
   ad9959_channel1.cfr.dac_power_down = 1;
   AD9959_Write(AD9959_CFR_ADDR, ad9959_channel1.cfr.raw);
-  AD9959_IOUpdate(&ad9959_pins);
+  AD9959_IOUpdate();
 }
 
 /* -------------------------------------------------------------------------- */
@@ -188,4 +194,28 @@ void BOARD_InitSI5351() {
   uint8_t data = 0;
   SWIIC_ReadBytes8(&si5351_pins, SI5351_ADDR, 0x03, &data, 1);
   printf("SI5351 status: %02x\n", data);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   LMX2572                                  */
+/* -------------------------------------------------------------------------- */
+
+LMX2572_Pins lmx2572_pins;
+void BOARD_InitLMX2572() {
+  lmx2572_pins.CS_Port = GPIOC;
+  lmx2572_pins.CS_Pin = GPIO_PIN_15;
+  lmx2572_pins.ENABLE_Port = NULL;
+  lmx2572_pins.SCK_Port = GPIOC;
+  lmx2572_pins.SCK_Pin = GPIO_PIN_14;
+  lmx2572_pins.SDI_Port = GPIOC;
+  lmx2572_pins.SDI_Pin = GPIO_PIN_13;
+  lmx2572_pins.MUXOUT_Port = GPIOC;
+  lmx2572_pins.MUXOUT_Pin = GPIO_PIN_9;
+  LMX2572_Init(&lmx2572_pins, LMX2572_REFIN_50MHZ);
+  LMX2572_SetFrequency(100e6);
+  int reg0 = LMX2572_ReadRegister(0x00);
+  printf("LMX2572 reg0: %02x\n", reg0);
+  while (1) {
+    LMX2572_WriteRegister(0x00, 0x201C);
+  }
 }

@@ -1,14 +1,19 @@
 #include <math.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "app.h"
 
 #include "board.h"
+#include "lmx2572.h"
 #include "nn.h"
 #include "power.h"
 #include "retarget.h"
 #include "serial.h"
 #include "signal.h"
+#include "stm32h7xx_hal.h"
+#include "stm32h7xx_hal_gpio.h"
 #include "timers.h"
 #include "ui.h"
 
@@ -36,21 +41,50 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
   LED_Off(2);
 }
 
+void APP_InitRFSwitch() {
+  // Init C0, C1 as output
+  GPIO_InitTypeDef s = {
+      .Mode = GPIO_MODE_OUTPUT_PP,
+      .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_HIGH,
+  };
+  s.Pin = GPIO_PIN_0;
+  HAL_GPIO_Init(GPIOC, &s);
+  s.Pin = GPIO_PIN_1;
+  HAL_GPIO_Init(GPIOC, &s);
+}
+
+#define RFSWITCH_DETECTOR 0    // 00
+#define RFSWITCH_DEMODULATOR 1 // 11
+
+void APP_SetRFSwitch(int mode) {
+  if (mode == RFSWITCH_DETECTOR) {
+    printf("RFSWITCH_DETECTOR\n");
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
+  } else if (mode == RFSWITCH_DEMODULATOR) {
+    printf("RFSWITCH_DEMODULATOR\n");
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+  }
+  TIM_DelayUs(50);
+}
+
 double APP_PowerDetectorScan(double start, double end, double step,
-                             double threshold, int delay) {
+                             double threshold) {
+  APP_SetRFSwitch(RFSWITCH_DETECTOR);
   printf("Scanning from %lf MHz to %lf MHz with step %lf MHz\n", start / 1e6,
          end / 1e6, step / 1e6);
   for (int freq = start; ((step > 0) ? (freq <= end) : (freq >= end));
        freq += step) {
-    SI5351_SetupCLK0(freq, SI5351_DRIVE_STRENGTH_8MA);
-    SI5351_SetupCLK2(freq, SI5351_DRIVE_STRENGTH_8MA);
-    TIM_DelayUs(delay);
-    AD7606B_CollectSamples(ad_data, AD7606B_CHANNEL_FLAG_CH3, 8, 100e3);
+    LMX2572_SetFrequency(freq);
+    // TIM_DelayUs(delay);
+    AD7606B_CollectSamples(ad_data, AD7606B_CHANNEL_FLAG_CH4, 8, 100e3);
     double avg = 0;
     for (int i = 0; i < 8; i++) {
       avg += ad_data[i];
     }
-    avg = avg * 2.5 / 32768 / 8;
+    avg = avg * 2.5 / 32768 / 8 + 2.5;
     if (avg > threshold) {
       printf("Detected voltage %lfV at %lf MHz\n", avg, freq / 1e6);
       return freq;
@@ -60,22 +94,23 @@ double APP_PowerDetectorScan(double start, double end, double step,
   return 0;
 }
 
-double APP_PowerDetectorFineScan(double center, int order, double threshold,
-                                 int delay) {
-  printf("Scanning around %lf MHz with order %d\n", center / 1e6, order);
+double APP_PowerDetectorFineScan(double center, double range, double step,
+                                 int mode, double threshold) {
+  APP_SetRFSwitch(mode);
+  printf("Scanning around %lf MHz", center / 1e6);
   double result = 0;
   double sum = 0;
-  for (int freq = center - 0.7e6 / order; freq <= center + 0.7e6 / order;
-       freq += 10e3 / order) {
-    SI5351_SetupCLK0(freq, SI5351_DRIVE_STRENGTH_8MA);
-    SI5351_SetupCLK2(freq, SI5351_DRIVE_STRENGTH_8MA);
-    TIM_DelayUs(delay);
-    AD7606B_CollectSamples(ad_data, AD7606B_CHANNEL_FLAG_CH3, 8, 100e3);
+  int channel = (mode == RFSWITCH_DETECTOR) ? AD7606B_CHANNEL_FLAG_CH4
+                                            : AD7606B_CHANNEL_FLAG_CH3;
+  for (int freq = center - range; freq <= center + range; freq += step) {
+    LMX2572_SetFrequency(freq);
+    // TIM_DelayUs(delay);
+    AD7606B_CollectSamples(ad_data, mode, 8, 100e3);
     double avg = 0;
     for (int i = 0; i < 8; i++) {
       avg += ad_data[i];
     }
-    avg = avg * 2.5 / 32768 / 8;
+    avg = avg * 2.5 / 32768 / 8 + (mode == RFSWITCH_DETECTOR ? 2.5 : 0);
     sum += avg;
     result += avg * freq;
   }
@@ -87,10 +122,9 @@ double APP_PowerDetectorFineScan(double center, int order, double threshold,
 float fft_buffer[AD_SAMPLE_COUNT * 2];
 float fft_mag[AD_SAMPLE_COUNT];
 
-void APP_DetectAMFM(double center, int delay) {
-  SI5351_SetupCLK0(center, SI5351_DRIVE_STRENGTH_8MA);
-  SI5351_SetupCLK2(center, SI5351_DRIVE_STRENGTH_8MA);
-  TIM_DelayUs(delay);
+void APP_DetectAMFM(double center) {
+  APP_SetRFSwitch(RFSWITCH_DEMODULATOR);
+  LMX2572_SetFrequency(center);
 
   int points = 4096;
   int sampleRate = 40960;
@@ -129,142 +163,22 @@ void APP_DetectAMFM(double center, int delay) {
   }
 }
 
-void APP_FinalScan(double center, int order, int symbol, int delay) {
-  center = APP_PowerDetectorFineScan(center, order, 0.3, delay);
-  printf(">> Carrier frequency: %lf MHz\n",
-         center * order / 1e6 - symbol * 10.7);
-  APP_DetectAMFM(center, 10000);
-}
-
-void APP_InitFilters() {
-  // Init GPIO C0-C3 as output
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-}
-
-#define FILTER_NONE 0     // 0 0 0 0
-#define FILTER_LPF_145M 1 // 0 1 1 1
-#define FILTER_LPF_200M 2 // 1 1 0 1
-
-void APP_SelectFilter(uint8_t filter) {
-  if (filter == FILTER_NONE) {
-    printf("No filter\n");
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
-  } else if (filter == FILTER_LPF_145M) {
-    printf("145MHz LPF\n");
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
-  } else if (filter == FILTER_LPF_200M) {
-    printf("200MHz LPF\n");
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
+void APP_FullPowerScanSystem(double threshold1, double threshold2) {
+  printf(">> Start full power scan\n");
+  double freq_rough1 = APP_PowerDetectorScan(843e6, 423e6, -5e6, threshold1);
+  if (freq_rough1 == 0) {
+    printf(">> No signal detected.\n");
+    return;
   }
-  TIM_DelayUs(100);
-}
-
-void APP_LowPowerScanSystemOrder2(int threshold_int, int delay) {
-  int startTick = HAL_GetTick();
-  double threshold = threshold_int / 1000.0;
-
-  APP_SelectFilter(FILTER_LPF_200M);
-  double result_200_150 =
-      APP_PowerDetectorScan(200e6, 150e6, -0.25e6, threshold, delay);
-  if (result_200_150 == 0) {
-    APP_SelectFilter(FILTER_NONE);
-    double result_400_300 =
-        APP_PowerDetectorScan(200e6, 150e6, -0.125e6, threshold, delay);
-    if (result_400_300 == 0) {
-      APP_SelectFilter(FILTER_LPF_145M);
-      double result_150_100 =
-          APP_PowerDetectorScan(150e6, 100e6, -0.25e6, threshold, delay);
-      if (result_150_100 == 0) {
-        APP_SelectFilter(FILTER_NONE);
-        double result_300_200 =
-            APP_PowerDetectorScan(150e6, 100e6, -0.125e6, threshold, delay);
-        if (result_300_200 == 0) {
-          APP_SelectFilter(FILTER_LPF_145M);
-          double result_100_15 =
-              APP_PowerDetectorScan(100e6, 15e6, -0.25e6, threshold, delay);
-          if (result_100_15 == 0) {
-            printf(">> No signal\n");
-          } else {
-            APP_FinalScan(result_100_15, 1, +1, delay);
-          }
-        } else {
-          APP_FinalScan(result_300_200, 2, +1, delay);
-        }
-      } else {
-        APP_FinalScan(result_150_100, 1, +1, delay);
-      }
-    } else {
-      APP_FinalScan(result_400_300, 2, +1, delay);
-    }
-  } else if (result_200_150 <= 178e6) {
-    APP_FinalScan(result_200_150, 1, +1, delay);
-  } else {
-    APP_SelectFilter(FILTER_NONE);
-    double result_upper = APP_PowerDetectorScan(
-        result_200_150 + 20e6, result_200_150 + 23e6, 0.25e6, threshold, delay);
-    if (result_upper == 0) {
-      APP_FinalScan(result_200_150, 1, +1, delay);
-    } else {
-      APP_FinalScan(result_200_150, 1, -1, delay);
-    }
-  }
-
-  int endTick = HAL_GetTick();
-  printf("Time: %dms\n", endTick - startTick);
-}
-
-void APP_LowPowerScanSystemOrder3(int threshold_int, int delay) {
-  int startTick = HAL_GetTick();
-  double threshold = threshold_int / 1000.0;
-
-  APP_SelectFilter(FILTER_NONE);
-  double result_200_133 =
-      APP_PowerDetectorScan(200e6, 133e6, -0.25e6, threshold, delay);
-  if (result_200_133 == 0) {
-    APP_SelectFilter(FILTER_LPF_145M);
-    double result_133_10 =
-        APP_PowerDetectorScan(133e6, 20e6, -0.25e6, threshold, delay);
-    if (result_133_10 == 0) {
-      APP_SelectFilter(FILTER_NONE);
-      double result_400_200 =
-          APP_PowerDetectorScan(140e6, 66e6, -0.08e6, threshold, delay);
-      if (result_400_200 == 0) {
-        printf(">> No signal\n");
-      } else {
-        APP_FinalScan(result_400_200, 3, +1, delay);
-      }
-    } else {
-      APP_FinalScan(result_133_10, 1, +1, delay);
-    }
-  } else if (result_200_133 <= 178e6) {
-    APP_FinalScan(result_200_133, 1, +1, delay);
-  } else {
-    APP_SelectFilter(FILTER_NONE);
-    double result_upper = APP_PowerDetectorScan(
-        result_200_133 + 20e6, result_200_133 + 23e6, 0.25e6, threshold, delay);
-    if (result_upper == 0) {
-      APP_FinalScan(result_200_133, 1, +1, delay);
-    } else {
-      APP_FinalScan(result_200_133, 1, -1, delay);
-    }
-  }
-
-  int endTick = HAL_GetTick();
-  printf("Time: %dms\n", endTick - startTick);
+  double freq_rough2 = APP_PowerDetectorFineScan(freq_rough2, 20e6, 100e3,
+                                                 RFSWITCH_DETECTOR, threshold1);
+  double carrier = freq_rough2 - 433e6;
+  printf("Detected carrier frequency around %lf MHz\n", carrier / 1e6);
+  double freq_fine = APP_PowerDetectorFineScan(
+      freq_rough2 + 10.7e6, 1e6, 10e3, RFSWITCH_DEMODULATOR, threshold2);
+  carrier = freq_fine - 10.7e6;
+  printf(">> Carrier frequency %lf MHz\n", carrier / 1e6);
+  APP_DetectAMFM(freq_fine);
 }
 
 UART_RxBuffer com_buf;
@@ -291,33 +205,25 @@ void APP_PollUartCommands() {
     double freq = TIM_CountFrequencySync(&htim2, 100);
     printf("Freq: %fMHz\n", freq / 1000000.0);
   } else if (*data == 3) {
-    readCount = UART_Read(&com_buf, data + 1, 9, 1000);
+    readCount = UART_Read(&com_buf, data + 1, 4, 1000);
     if (readCount != 9)
       return;
-    int freq0 = *(int *)(data + 1);
-    int freq2 = *(int *)(data + 5);
-    uint8_t power = *(uint8_t *)(data + 9);
-    SI5351_SetupCLK0(freq0, power);
-    SI5351_SetupCLK2(freq2, power);
+    uint32_t freq = *(uint32_t *)(data + 1);
+    LMX2572_SetFrequency(freq);
   } else if (*data == 4) {
-    readCount = UART_Read(&com_buf, data + 1, 9, 1000);
-    if (readCount != 9)
+    readCount = UART_Read(&com_buf, data + 1, 8, 1000);
+    if (readCount != 8)
       return;
-    uint8_t order = *(uint8_t *)(data + 1);
-    int threshold = *(int *)(data + 2);
-    int delay = *(int *)(data + 6);
-    if (order == 2) {
-      APP_LowPowerScanSystemOrder2(threshold, delay);
-    } else if (order == 3) {
-      APP_LowPowerScanSystemOrder3(threshold, delay);
-    }
+    uint32_t th1 = *(uint32_t *)(data + 1);
+    uint32_t th2 = *(uint32_t *)(data + 5);
+    APP_FullPowerScanSystem(th1 / 1000.0, th2 / 1000.0);
     printf("END\n");
   } else if (*data == 5) {
     readCount = UART_Read(&com_buf, data + 1, 1, 1000);
     if (readCount != 1)
       return;
-    uint8_t filter = *(uint8_t *)(data + 1);
-    APP_SelectFilter(filter);
+    uint8_t s = *(uint8_t *)(data + 1);
+    APP_SetRFSwitch(s);
   }
 }
 
@@ -359,12 +265,10 @@ void APP_Init() {
   computer = &huart1;
   RetargetInit(computer);
   BOARD_InitAD7606();
-  BOARD_InitSI5351();
-  APP_InitFilters();
+  BOARD_InitLMX2572();
+  APP_InitRFSwitch();
   UART_RxBuffer_Init(&com_buf, computer);
   UART_Open(&com_buf);
-  // UI_InitEPD();
-  // UI_TestEPD();
   APP_InitKeys();
   printf("CMake is working!\n");
 }

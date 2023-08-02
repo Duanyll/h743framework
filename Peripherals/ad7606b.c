@@ -26,7 +26,7 @@ void AD7606B_SetDBInput() {
       .Pin = 0xFFFF, // All pins
       .Mode = GPIO_MODE_INPUT,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_HIGH,
+      .Speed = GPIO_SPEED_FREQ_VERY_HIGH,
   };
   HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 }
@@ -36,17 +36,13 @@ void AD7606B_SetDBOutput() {
       .Pin = 0xFFFF, // All pins
       .Mode = GPIO_MODE_OUTPUT_PP,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_HIGH,
+      .Speed = GPIO_SPEED_FREQ_VERY_HIGH,
   };
   HAL_GPIO_Init(pins->DB_Port, &GPIO_InitStruct);
 }
 
 // delay for at least 40ns
 void AD7606B_Delay() {
-  __NOP();
-  __NOP();
-  __NOP();
-  __NOP();
   __NOP();
   __NOP();
   __NOP();
@@ -71,7 +67,7 @@ void AD7606B_Init(AD7606B_Pins *p) {
   GPIO_InitTypeDef GPIO_InitStruct = {
       .Mode = GPIO_MODE_OUTPUT_PP,
       .Pull = GPIO_NOPULL,
-      .Speed = GPIO_SPEED_FREQ_HIGH,
+      .Speed = GPIO_SPEED_FREQ_VERY_HIGH,
   };
 #define INIT(pin)                                                              \
   GPIO_InitStruct.Pin = pins->pin##_Pin;                                       \

@@ -70,7 +70,9 @@ add_definitions(
 )
 
 # Read Makefile and extract sources with regex
-file(STRINGS Makefile HAL_SOURCES REGEX "Drivers/STM32H7xx_HAL_Driver/Src/.*\\.c")
+file(STRINGS Makefile HAL_SOURCES REGEX "Drivers/STM32H7xx_HAL_Driver/Src/")
+list(TRANSFORM HAL_SOURCES REPLACE "\\\\" "")
+list(TRANSFORM HAL_SOURCES STRIP)
 
 file(GLOB_RECURSE SOURCES 
     "Core/*.c" 

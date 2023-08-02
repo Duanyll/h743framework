@@ -18,11 +18,11 @@ double CGS_ModL2Norm(int n, double *base, double *x, double *y) {
 }
 
 double CGS_DetectCarrierFrequencyIteration(int n, double *base,
-                                           double *base_coord, double start,
-                                           double end, double step) {
+                                           double *base_coord, int start,
+                                           int end, int step) {
   double best_norm = 1e18;
   double best_freq = 0;
-  for (double freq = start; freq <= end; freq += step) {
+  for (int freq = start; freq <= end; freq += step) {
     double candidate_coord[CGS_MAXN] = {0};
     for (int i = 0; i < n; i++) {
       candidate_coord[i] = CGS_GetBandpassPeak(base[i], freq);

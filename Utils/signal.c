@@ -6,7 +6,8 @@
 #include "arm_math.h"
 
 void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
-                       double sampleRate, SIGNAL_FFTBufferF32 *buffer) {
+                       double sampleRate, SIGNAL_FFTBufferF32 *buffer,
+                       BOOL stripDc) {
   if (points == 64 || points == 256 || points == 1024 || points == 4096) {
     buffer->rad4Instance.fftLen = points;
     arm_cfft_radix4_init_f32(&buffer->rad4Instance, points, 0, 1);
@@ -23,16 +24,25 @@ void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
   freqData->cfftData = buffer->fftBuffer;
   freqData->peakAmp = 0;
   freqData->peakFreq = 0;
-  BOOL dcLeakFlag = TRUE;
-  for (int i = 2; i < freqData->points; i++) {
-    if (dcLeakFlag && buffer->magBuffer[i] < buffer->magBuffer[i - 1]) {
-      continue;
-    } else {
-      dcLeakFlag = FALSE;
+  if (stripDc) {
+    BOOL dcLeakFlag = TRUE;
+    for (int i = 2; i < freqData->points; i++) {
+      if (dcLeakFlag && buffer->magBuffer[i] < buffer->magBuffer[i - 1]) {
+        continue;
+      } else {
+        dcLeakFlag = FALSE;
+      }
+      if (buffer->magBuffer[i] > freqData->peakAmp) {
+        freqData->peakAmp = buffer->magBuffer[i];
+        freqData->peakFreq = i * sampleRate / points;
+      }
     }
-    if (buffer->magBuffer[i] > freqData->peakAmp) {
-      freqData->peakAmp = buffer->magBuffer[i];
-      freqData->peakFreq = i * sampleRate / points;
+  } else {
+    for (int i = 0; i < freqData->points; i++) {
+      if (buffer->magBuffer[i] > freqData->peakAmp) {
+        freqData->peakAmp = buffer->magBuffer[i];
+        freqData->peakFreq = i * sampleRate / points;
+      }
     }
   }
 }
@@ -42,11 +52,13 @@ void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
                                  SIGNAL_FFTBufferF32 *buffer) {
   int idx = timeData->offset;
   int32_t mean = 0;
-  for (int i = 0; i < timeData->points; i++) {
-    mean += timeData->timeData[idx];
-    idx += timeData->stride;
+  if (timeData->stripDc) {
+    for (int i = 0; i < timeData->points; i++) {
+      mean += timeData->timeData[idx];
+      idx += timeData->stride;
+    }
+    mean /= timeData->points;
   }
-  mean /= timeData->points;
   idx = timeData->offset;
   for (int i = 0; i < timeData->points; i++) {
     buffer->fftBuffer[i * 2] =
@@ -55,7 +67,8 @@ void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
     idx += timeData->stride;
   }
   freqData->dc = mean / 32768.0f * timeData->range;
-  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer);
+  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer,
+                    timeData->stripDc);
 }
 
 void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
@@ -63,11 +76,13 @@ void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
                                  SIGNAL_FFTBufferF32 *buffer) {
   int idx = timeData->offset;
   float32_t mean = 0;
-  for (int i = 0; i < timeData->points; i++) {
-    mean += timeData->timeData[idx];
-    idx += timeData->stride;
+  if (timeData->stripDc) {
+    for (int i = 0; i < timeData->points; i++) {
+      mean += timeData->timeData[idx];
+      idx += timeData->stride;
+    }
+    mean /= timeData->points;
   }
-  mean /= timeData->points;
   idx = timeData->offset;
   for (int i = 0; i < timeData->points; i++) {
     buffer->fftBuffer[i * 2] = timeData->timeData[idx] - mean;
@@ -75,7 +90,8 @@ void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
     idx += timeData->stride;
   }
   freqData->dc = mean;
-  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer);
+  SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer,
+                    timeData->stripDc);
 }
 
 #endif
