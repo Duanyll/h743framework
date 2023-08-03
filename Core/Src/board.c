@@ -1,9 +1,9 @@
 #include "board.h"
 #include "ad7606c.h"
 #include "lmx2572.h"
+#include "main.h"
 #include "stm32h743xx.h"
 #include "stm32h7xx_hal_gpio.h"
-
 
 /* -------------------------------------------------------------------------- */
 /*                                   AD7606                                   */
@@ -140,23 +140,23 @@ AD9959_GlobalConfig ad9959_config;
 AD9959_ChannelConfig ad9959_channel0, ad9959_channel1;
 
 void BOARD_InitAD9959() {
-  ad9959_pins.SDIO0_Port = GPIOB;
-  ad9959_pins.SDIO0_Pin = GPIO_PIN_9;
-  ad9959_pins.SCLK_Port = GPIOB;
-  ad9959_pins.SCLK_Pin = GPIO_PIN_8;
-  ad9959_pins.CSB_Port = GPIOB;
-  ad9959_pins.CSB_Pin = GPIO_PIN_7;
-  ad9959_pins.RST_Port = GPIOA;
-  ad9959_pins.RST_Pin = GPIO_PIN_8;
-  ad9959_pins.IOUP_Port = GPIOA;
-  ad9959_pins.IOUP_Pin = GPIO_PIN_9;
+  ad9959_pins.SDIO0_Port = AD9959_SDIO0_GPIO_Port;
+  ad9959_pins.SDIO0_Pin = AD9959_SDIO0_Pin;
+  ad9959_pins.SCLK_Port = AD9959_SCLK_GPIO_Port;
+  ad9959_pins.SCLK_Pin = AD9959_SCLK_Pin;
+  ad9959_pins.CSB_Port = AD9959_CSB_GPIO_Port;
+  ad9959_pins.CSB_Pin = AD9959_CSB_Pin;
+  ad9959_pins.RST_Port = AD9959_RST_GPIO_Port;
+  ad9959_pins.RST_Pin = AD9959_RST_Pin;
+  ad9959_pins.IOUP_Port = AD9959_IOUP_GPIO_Port;
+  ad9959_pins.IOUP_Pin = AD9959_IOUP_Pin;
   AD9959_InitGlobalConfig(&ad9959_config);
   AD9959_Init(&ad9959_pins, &ad9959_config);
   AD9959_InitChannelConfig(&ad9959_channel0);
   AD9959_InitChannelConfig(&ad9959_channel1);
 
   AD9959_SelectChannels(&ad9959_config, AD9959_CHANNEL_0);
-  AD9959_SetFrequency(&ad9959_channel0, 100e6);
+  AD9959_SetFrequency(&ad9959_channel0, 100e3);
   AD9959_SetPhase(&ad9959_channel0, 0);
   AD9959_SetAmplitude(&ad9959_channel0, 0x3fff);
   AD9959_IOUpdate();
@@ -213,9 +213,4 @@ void BOARD_InitLMX2572() {
   lmx2572_pins.MUXOUT_Pin = GPIO_PIN_9;
   LMX2572_Init(&lmx2572_pins, LMX2572_REFIN_50MHZ);
   LMX2572_SetFrequency(100e6);
-  int reg0 = LMX2572_ReadRegister(0x00);
-  printf("LMX2572 reg0: %02x\n", reg0);
-  while (1) {
-    LMX2572_WriteRegister(0x00, 0x201C);
-  }
 }

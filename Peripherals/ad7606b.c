@@ -2,8 +2,13 @@
 
 #include <math.h>
 
-#include "timers.h"
+#include "cmsis_gcc.h"
 #include "led.h"
+#include "stm32h7xx_hal_rcc.h"
+#include "stm32h7xx_hal_tim.h"
+#include "tim.h"
+#include "timers.h"
+
 
 static AD7606B_Pins *pins;
 
@@ -46,12 +51,7 @@ void AD7606B_Delay() {
   __NOP();
   __NOP();
   __NOP();
-  __NOP();
-  __NOP();
-  __NOP();
-  // for (int i = 0; i < 50; i++) {
-  //   __NOP();
-  // }
+  // __NOP();
 }
 
 void AD7606B_FullReset(void) {
@@ -223,6 +223,48 @@ BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
     data[i] = (int16_t)pins->PinsToData(data[i]);
   }
   return TRUE;
+}
+
+double AD7606B_FastCollectSamples(int16_t *data, uint8_t channels,
+                                  uint32_t count) {
+  __disable_irq();
+  // Reset TIM2 to 0
+  TIM2->CNT = 0;
+  __HAL_TIM_ENABLE(&htim2);
+  for (int cnt = 0; cnt < count; cnt++) {
+    WRITE(CS, LOW);
+    WRITE(CONVST, LOW);
+    AD7606B_Delay();
+    WRITE(CONVST, HIGH);
+    AD7606B_Delay();
+
+    while (HAL_GPIO_ReadPin(pins->BUSY_Port, pins->BUSY_Pin) == GPIO_PIN_SET)
+      ;
+
+    AD7606B_Delay();
+    for (int i = 0; i < 8; i++) {
+      WRITE(RD, LOW);
+      AD7606B_Delay();
+      if (channels & (1 << i)) {
+        *data = pins->DB_Port->IDR;
+        data++;
+      }
+      WRITE(RD, HIGH);
+      AD7606B_Delay();
+    }
+
+    WRITE(CS, HIGH);
+    AD7606B_Delay();
+  }
+  __HAL_TIM_DISABLE(&htim2);
+  __enable_irq();
+  double time = (double)TIM2->CNT / (HAL_RCC_GetPCLK1Freq() * 2);
+  int points = count * popcount(channels);
+  double sampleRate = points / time;
+  for (int i = 0; i < points; i++) {
+    data[i] = (int16_t)pins->PinsToData(data[i]);
+  }
+  return sampleRate;
 }
 
 void AD7606B_StartContinuousConvert(double sampleRate, uint8_t channels,

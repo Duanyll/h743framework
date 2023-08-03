@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "ad7606b.h"
 #include "app.h"
 
 #include "board.h"
@@ -38,6 +39,17 @@ void APP_UploadADCData(uint8_t channels, uint32_t sample_count,
   UART_SendString(computer, "\xff\xff\xff\xff");
   HAL_UART_Transmit(computer, (uint8_t *)ad_data,
                     sample_count * 2 * popcount(channels), 10000);
+  LED_Off(2);
+}
+
+void APP_UploadADCDataFast(uint8_t channels, uint32_t sample_count) {
+  LED_On(2);
+  double sample_rate =
+      AD7606B_FastCollectSamples(ad_data, channels, sample_count);
+  UART_SendString(computer, "\xff\xff\xff\xff");
+  UART_SendHex(computer, (uint8_t *)&sample_rate, 8);
+  UART_SendHex(computer, (uint8_t *)ad_data,
+               sample_count * 2 * popcount(channels));
   LED_Off(2);
 }
 
@@ -202,28 +214,14 @@ void APP_PollUartCommands() {
     sample_rate = *(uint32_t *)(data + 6);
     APP_UploadADCData(channels, sample_count, sample_rate);
   } else if (*data == 2) {
-    double freq = TIM_CountFrequencySync(&htim2, 100);
-    printf("Freq: %fMHz\n", freq / 1000000.0);
-  } else if (*data == 3) {
-    readCount = UART_Read(&com_buf, data + 1, 4, 1000);
-    if (readCount != 9)
+    uint8_t channels = 0x0f;
+    uint32_t sample_count = 128;
+    readCount = UART_Read(&com_buf, data + 1, 5, 1000);
+    if (readCount != 5)
       return;
-    uint32_t freq = *(uint32_t *)(data + 1);
-    LMX2572_SetFrequency(freq);
-  } else if (*data == 4) {
-    readCount = UART_Read(&com_buf, data + 1, 8, 1000);
-    if (readCount != 8)
-      return;
-    uint32_t th1 = *(uint32_t *)(data + 1);
-    uint32_t th2 = *(uint32_t *)(data + 5);
-    APP_FullPowerScanSystem(th1 / 1000.0, th2 / 1000.0);
-    printf("END\n");
-  } else if (*data == 5) {
-    readCount = UART_Read(&com_buf, data + 1, 1, 1000);
-    if (readCount != 1)
-      return;
-    uint8_t s = *(uint8_t *)(data + 1);
-    APP_SetRFSwitch(s);
+    channels = data[1];
+    sample_count = *(uint32_t *)(data + 2);
+    APP_UploadADCDataFast(channels, sample_count);
   }
 }
 
@@ -265,7 +263,8 @@ void APP_Init() {
   computer = &huart1;
   RetargetInit(computer);
   BOARD_InitAD7606();
-  BOARD_InitLMX2572();
+  BOARD_InitAD9959();
+  // BOARD_InitLMX2572();
   APP_InitRFSwitch();
   UART_RxBuffer_Init(&com_buf, computer);
   UART_Open(&com_buf);

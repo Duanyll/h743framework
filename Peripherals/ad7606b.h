@@ -32,7 +32,7 @@
 // 6. To take multiple samples at specified sample rate, call
 // AD7606B_CollectSamples().
 
-typedef uint16_t (AD7606B_DataConvertFunction)(uint16_t data);
+typedef uint16_t(AD7606B_DataConvertFunction)(uint16_t data);
 
 typedef struct {
   GPIO_TypeDef *CS_Port;
@@ -143,9 +143,11 @@ void AD7606B_ADCConvert(uint16_t *data, uint8_t channels);
 // Take multiple samples at given sample rate in blocking mode
 BOOL AD7606B_CollectSamples(int16_t *data, uint8_t channels, uint32_t count,
                             double sampleRate);
-// Start continuous convert mode, call AD7606B_StopContinuousConvert to stop.
-// Recieve data in callback function asynchronously. LED1 indicates if the
-// callback takes too long to process at given sample rate.
+double AD7606B_FastCollectSamples(int16_t *data, uint8_t channels,
+                                  uint32_t count);
+// Start continuous convert mode, call AD7606B_StopContinuousConvert to
+// stop. Recieve data in callback function asynchronously. LED1 indicates if
+// the callback takes too long to process at given sample rate.
 void AD7606B_StartContinuousConvert(double sampleRate, uint8_t channels,
                                     void (*callback)(int16_t *data));
 // Stop continuous convert mode

@@ -1,9 +1,30 @@
 #include "signal.h"
+#include <math.h>
 
 #if defined(ARM_MATH_CM3) || defined(ARM_MATH_CM4) || defined(ARM_MATH_CM7) || \
     defined(ARM_MATH_CM0) || defined(ARM_MATH_CM0PLUS)
 
 #include "arm_math.h"
+
+void SIGNAL_AddWindowF32(SIGNAL_FFTBufferF32 *buf, int points, int windowType) {
+  for (int i = 0; i < points; i += 1) {
+    switch (windowType) {
+    case SIGNAL_WINDOW_HANNING:
+      buf->fftBuffer[i * 2] *= 0.5 * (1 - arm_cos_f32(2 * PI * i / points));
+      break;
+    case SIGNAL_WINDOW_HAMMING:
+      buf->fftBuffer[i * 2] *= 0.54 - 0.46 * arm_cos_f32(2 * PI * i / points);
+      break;
+    case SIGNAL_WINDOW_BLACKMAN:
+      buf->fftBuffer[i * 2] *= 0.42 - 0.5 * arm_cos_f32(2 * PI * i / points) +
+                           0.08 * arm_cos_f32(4 * PI * i / points);
+      break;
+    case SIGNAL_WINDOW_BARTLETT:
+      buf->fftBuffer[i * 2] *= 1 - 2 * fabs((float)i / points - 0.5);
+      break;
+    }
+  }
+}
 
 void SIGNAL_FFTImplF32(SIGNAL_SpectrumF32 *freqData, int points,
                        double sampleRate, SIGNAL_FFTBufferF32 *buffer,
@@ -67,6 +88,9 @@ void SIGNAL_TimeQ15ToSpectrumF32(SIGNAL_TimeDataQ15 *timeData,
     idx += timeData->stride;
   }
   freqData->dc = mean / 32768.0f * timeData->range;
+  if (timeData->window != SIGNAL_WINDOW_NONE) {
+    SIGNAL_AddWindowF32(buffer, timeData->points, timeData->window);
+  }
   SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer,
                     timeData->stripDc);
 }
@@ -90,6 +114,9 @@ void SIGNAL_TimeF32ToSpectrumF32(SIGNAL_TimeDataF32 *timeData,
     idx += timeData->stride;
   }
   freqData->dc = mean;
+  if (timeData->window != SIGNAL_WINDOW_NONE) {
+    SIGNAL_AddWindowF32(buffer, timeData->points, timeData->window);
+  }
   SIGNAL_FFTImplF32(freqData, timeData->points, timeData->sampleRate, buffer,
                     timeData->stripDc);
 }
@@ -107,16 +134,23 @@ void SIGNAL_FindPeaksF32(SIGNAL_SpectrumF32 *freqData, SIGNAL_PeaksF32 *peaks,
       if (i - lastPeak > distance && peaks->count < SIGNAL_MAX_PEAKS) {
         peaks->peaks[peaks->count].amp = amp[i];
         peaks->peaks[peaks->count].freq =
-            i * freqData->sampleRate / freqData->points;
+            i * freqData->sampleRate / freqData->points / 2;
+        peaks->peaks[peaks->count].index = i;
         peaks->count++;
         lastPeak = i;
       } else if (amp[i] > peaks->peaks[peaks->count - 1].amp) {
         peaks->peaks[peaks->count - 1].amp = amp[i];
         peaks->peaks[peaks->count - 1].freq =
-            i * freqData->sampleRate / freqData->points;
+            i * freqData->sampleRate / freqData->points / 2;
+        peaks->peaks[peaks->count - 1].index = i;
         lastPeak = i;
       }
     }
+  }
+  for (int i = 0; i < peaks->count; i++) {
+    int idx = peaks->peaks[i].index;
+    peaks->peaks[i].phase =
+        atan2f(freqData->cfftData[idx * 2], freqData->cfftData[idx * 2 + 1]);
   }
 }
 

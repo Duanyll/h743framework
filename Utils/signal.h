@@ -1,8 +1,14 @@
 #pragma once
 
+#include "common.h"
 #include "main.h"
 #include "utils_config.h"
-#include "common.h"
+
+#define SIGNAL_WINDOW_NONE 0
+#define SIGNAL_WINDOW_HANNING 1
+#define SIGNAL_WINDOW_HAMMING 2
+#define SIGNAL_WINDOW_BLACKMAN 3
+#define SIGNAL_WINDOW_BARTLETT 4
 
 typedef struct SIGNAL_TimeDataQ15 {
   int points;        // number of points in the signal
@@ -16,6 +22,7 @@ typedef struct SIGNAL_TimeDataQ15 {
                      // same buffer.
   float range;       // range of the signal +/- range
   BOOL stripDc;      // if true, strip the DC component
+  int window;        // window type
 } SIGNAL_TimeDataQ15;
 
 typedef struct SIGNAL_TimeDataF32 {
@@ -25,6 +32,7 @@ typedef struct SIGNAL_TimeDataF32 {
   double sampleRate;
   float *timeData;
   BOOL stripDc; // if true, strip the DC component
+  int window;   // window type
 } SIGNAL_TimeDataF32;
 
 #if defined(ARM_MATH_CM3) || defined(ARM_MATH_CM4) || defined(ARM_MATH_CM7) || \
@@ -53,12 +61,16 @@ typedef struct SIGNAL_SpectrumF32 {
   float peakAmp;     // amplitude of the peak
 } SIGNAL_SpectrumF32;
 
+typedef struct {
+  double freq; // frequency of the peak
+  float amp;   // amplitude of the peak
+  float phase; // phase of the peak
+  int index;   // index of the peak
+} SIGNAL_PeakF32;
+
 typedef struct SIGNAL_PeaksF32 {
-  int count; // number of peaks found
-  struct {
-    double freq;             // frequency of the peak
-    float amp;               // amplitude of the peak
-  } peaks[SIGNAL_MAX_PEAKS]; // array of peaks
+  int count;                              // number of peaks found
+  SIGNAL_PeakF32 peaks[SIGNAL_MAX_PEAKS]; // array of peaks
 } SIGNAL_PeaksF32;
 
 #if defined(ARM_MATH_CM3) || defined(ARM_MATH_CM4) || defined(ARM_MATH_CM7) || \
